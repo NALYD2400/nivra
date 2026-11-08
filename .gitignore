@@ -1,0 +1,15 @@
+node_modules/
+dist/
+src-tauri/target/
+.originkit/
+.impeccable/
+.private/
+.build-cache/
+.env
+.env.*
+*.key
+*.pem
+*.pfx
+*.p12
+*.exe
+src-tauri/gen/
