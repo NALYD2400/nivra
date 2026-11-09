@@ -56,4 +56,17 @@ html[data-theme="light"] :is(.summary,.antigravity-detected .account-card,.setti
 .antigravity-detected .section-header .ghost{transition:border-color .2s ease,box-shadow .2s ease,background-color .2s ease,transform .16s ease}
 .antigravity-detected .section-header .ghost:hover,.antigravity-detected .section-header .ghost:focus-visible{border-color:#bca4fa;box-shadow:0 0 0 1px rgba(190,164,250,.2),0 0 14px rgba(167,125,246,.18)}
 .update-row{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-top:18px;color:#bdb7c9;font-size:11px;line-height:1.5}.update-banner{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:18px;padding:10px 14px;border:1px solid rgba(194,171,247,.24);border-radius:10px;background:rgba(110,76,160,.18);color:#ede5ff;font-size:11px}.update-banner .text-button{white-space:nowrap}html[data-theme="light"] .update-row{color:#675d72}html[data-theme="light"] .update-banner{background:rgba(171,143,214,.18);color:#463157}@media(max-width:580px){.update-row,.update-banner{align-items:flex-start;flex-direction:column}}
+.account-drag-handle{display:grid;place-items:center;width:34px;height:34px;margin-left:-4px;padding:0;flex:none;border:0;border-radius:8px;background:transparent;cursor:grab;touch-action:none}
+.account-drag-handle img{display:block;width:36px;height:36px;max-width:none;object-fit:contain;pointer-events:none;transition:filter .18s ease}
+.account-drag-handle:hover img,.account-drag-handle:focus-visible img{filter:brightness(1.16)}.account-drag-handle:active{cursor:grabbing}
+.account-list .account-card{cursor:grab}.account-list .account-card.is-dragging{cursor:grabbing}.account-list .account-card img{-webkit-user-drag:none}
+.account-list .account-card.is-dragging{position:relative;z-index:3;opacity:.94;box-shadow:0 14px 32px rgba(8,5,16,.3),0 0 0 1px rgba(195,170,255,.28)}
+.reorder-status{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+body{-webkit-user-select:none;user-select:none}input,textarea,[contenteditable="true"]{-webkit-user-select:text;user-select:text}
+.account-actions{align-items:center}.account-updated{display:inline-flex;align-items:center;gap:5px;margin-right:5px;color:#aaa3b4;font-size:10px;white-space:nowrap;font-variant-numeric:tabular-nums}.account-updated svg{opacity:.8}html[data-theme="light"] .account-updated{color:#746b7d}
+.account-list .account-title{flex-wrap:wrap;white-space:normal;overflow:visible;overflow-wrap:anywhere}
+.account-warning{background:rgba(185,127,72,.18);color:#ebcca8;border:1px solid rgba(223,169,110,.2)}
+.account-reconnect{padding:2px 4px;border:0;border-radius:4px;background:transparent;color:#d1bfff;font-size:10px;font-weight:600;line-height:1.3;white-space:nowrap}
+.account-reconnect:hover{color:#eee7ff;text-decoration:underline}
+html[data-theme="light"] .account-warning{background:#f8eadb;border-color:#e7c8a5;color:#76532d}html[data-theme="light"] .account-reconnect{color:#6c4e9c}html[data-theme="light"] .account-reconnect:hover{color:#432c68}
 
