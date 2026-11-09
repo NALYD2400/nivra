@@ -1,3 +1,4 @@
+import settingsIcon from './assets/settings-icon.png';
 import { Check, Contrast, LayoutGrid, Moon, RotateCcw, Sun } from 'lucide-react';
 import { UpdateSettings, type UpdaterState } from './Updater';
 
@@ -10,7 +11,7 @@ export function readAppearance():Appearance {
   } catch { return defaults; }
 }
 export function AppearanceSettings({value,onChange,updater}:{value:Appearance;onChange:(value:Appearance)=>void;updater:UpdaterState}) {
-  return <div className="settings-content"><header className="settings-header"><div><h1>Réglages</h1><p>Adapte Nivra à tes préférences.</p></div><button className="button ghost" onClick={()=>onChange(defaults)}><RotateCcw size={14}/> Réinitialiser</button></header>
+  return <div className="settings-content"><header className="settings-header"><div className="page-heading"><img className="overview-heading-icon" src={settingsIcon} alt=""/><div><h1>Réglages</h1><p>Adapte Nivra à tes préférences.</p></div></div><button className="button ghost" onClick={()=>onChange(defaults)}><RotateCcw size={14}/> Réinitialiser</button></header>
     <section className="settings-section"><div className="settings-heading"><div className="settings-icon"><Contrast size={17}/></div><div><h2>Apparence</h2><p>Choisis le thème de ton espace.</p></div></div>
       <div className="theme-options" role="group" aria-label="Thème"><button type="button" className={`theme-choice ${value.theme==='dark'?'chosen':''}`} aria-pressed={value.theme==='dark'} onClick={()=>onChange({...value,theme:'dark'})}><span className="theme-preview dark-preview"><span/><i/><i/></span><span className="choice-label"><Moon size={15}/> Sombre {value.theme==='dark'&&<Check size={15}/>}</span></button><button type="button" className={`theme-choice ${value.theme==='light'?'chosen':''}`} aria-pressed={value.theme==='light'} onClick={()=>onChange({...value,theme:'light'})}><span className="theme-preview light-preview"><span/><i/><i/></span><span className="choice-label"><Sun size={15}/> Clair {value.theme==='light'&&<Check size={15}/>}</span></button></div>
     </section>
