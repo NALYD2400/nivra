@@ -1,4 +1,4 @@
-param(
+﻿param(
     [Parameter(Mandatory = $true)][ValidatePattern('^v\d+\.\d+\.\d+$')][string]$Tag,
     [string]$Repository = 'NALYD2400/nivra',
     [switch]$Publish,
@@ -38,16 +38,16 @@ foreach ($platform in $platforms) {
 }
 $installerPath = Join-Path $checkDirectory $installer
 $sha256 = (Get-FileHash -LiteralPath $installerPath -Algorithm SHA256).Hash.ToLowerInvariant()
-if ((Get-Item -LiteralPath $installerPath).Length -ne $installerAsset.size) { throw 'Taille de l’installateur incorrecte.' }
+if ((Get-Item -LiteralPath $installerPath).Length -ne $installerAsset.size) { throw 'Taille de l''installateur incorrecte.' }
 if ($installerAsset.digest -ne "sha256:$sha256") { throw 'Le SHA-256 téléchargé diffère de celui de GitHub.' }
 if ($Publish) {
-    if (-not $release.isDraft) { throw 'La publication doit partir d’une release brouillon vérifiée.' }
+    if (-not $release.isDraft) { throw 'La publication doit partir d''une release brouillon vérifiée.' }
     & gh release edit $Tag -R $Repository --draft=false --latest
     if ($LASTEXITCODE -ne 0) { throw 'La publication de la release a échoué.' }
     $publishedText = & gh release view $Tag -R $Repository --json isDraft,isPrerelease
     if ($LASTEXITCODE -ne 0) { throw 'Impossible de vérifier la publication.' }
     $published = ConvertFrom-Json -InputObject ($publishedText -join "`n")
-    if ($published.isDraft -or $published.isPrerelease) { throw 'La release n’est pas publique et stable.' }
+    if ($published.isDraft -or $published.isPrerelease) { throw 'La release n''est pas publique et stable.' }
 } elseif ($RequirePublished -and $release.isDraft) { throw 'La release est encore en brouillon.' }
 Write-Output "Release vérifiée : $($release.url)"
 Write-Output "Installateur : $installer"

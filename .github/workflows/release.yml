@@ -4,6 +4,15 @@ on:
   push:
     tags:
       - 'v*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag du brouillon existant à vérifier et publier (ex. v0.1.1)'
+        required: true
+        type: string
+
+env:
+  RELEASE_TAG: ${{ inputs.tag || github.ref_name }}
 
 permissions:
   contents: write
@@ -14,30 +23,44 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
+        if: github.event_name == 'push'
         with:
           node-version: 22
           cache: npm
       - uses: dtolnay/rust-toolchain@stable
+        if: github.event_name == 'push'
       - name: Vérifier la version
         shell: pwsh
         run: |
           $version = (Get-Content src-tauri/tauri.conf.json -Raw | ConvertFrom-Json).version
-          if ("v$version" -ne "${{ github.ref_name }}") { throw "Le tag doit correspondre à la version de Nivra." }
+          if ("v$version" -ne $env:RELEASE_TAG) { throw "Le tag doit correspondre à la version de Nivra." }
+      - name: Vérifier le script de publication
+        shell: pwsh
+        run: |
+          $tokens = $null
+          $parseErrors = $null
+          [System.Management.Automation.Language.Parser]::ParseFile("$PWD/scripts/verify-release.ps1", [ref]$tokens, [ref]$parseErrors) | Out-Null
+          if ($parseErrors.Count -gt 0) { throw ($parseErrors -join [Environment]::NewLine) }
       - run: npm ci
+        if: github.event_name == 'push'
       - name: Vérifier les prévisions et le déplacement des comptes
+        if: github.event_name == 'push'
         run: npm test
       - run: npm run build
+        if: github.event_name == 'push'
       - name: Vérifier les lectures et la protection des sessions
+        if: github.event_name == 'push'
         run: cargo test --release --locked --manifest-path src-tauri/Cargo.toml
       - uses: tauri-apps/tauri-action@v1
+        if: github.event_name == 'push'
         id: tauri
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         with:
-          tagName: ${{ github.ref_name }}
-          releaseName: Nivra ${{ github.ref_name }}
+          tagName: ${{ env.RELEASE_TAG }}
+          releaseName: Nivra ${{ env.RELEASE_TAG }}
           releaseBody: |
             Nouvelle page Services, connexion et quotas Cursor / Grok, comptes réunis et réorganisables, prévisions adaptées aux périodes des services.
 
@@ -50,4 +73,4 @@ jobs:
         shell: pwsh
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: ./scripts/verify-release.ps1 -Tag '${{ github.ref_name }}' -Repository '${{ github.repository }}' -Publish
+        run: ./scripts/verify-release.ps1 -Tag $env:RELEASE_TAG -Repository '${{ github.repository }}' -Publish
