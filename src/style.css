@@ -170,3 +170,47 @@ html[data-theme="light"] .comparison-tooltip-more{color:#716779}
 html[data-theme="light"] .action-button.primary,html[data-theme="light"] .action-button.ghost{background:rgba(255,255,255,.88);border-color:#d8cbe5;color:#352842}
 html[data-theme="light"] .action-button.primary:hover,html[data-theme="light"] .action-button.ghost:hover{background:#f7f1fc;border-color:#bda6d2}
 @media(max-width:580px){.page-head .action-button{width:42px;min-height:42px;padding:5px;gap:0}.page-head .action-button>span:last-child{display:none}}
+
+/* Interactive quota charts: details stay beside the pointer, outside clipped cards. */
+.interactive-quota-chart{--quota-depleted:#ffb7c3}
+.forecast-pace-line{fill:none;stroke:#76d8b8;stroke-width:2;stroke-dasharray:2 5;stroke-linecap:round;opacity:.85}
+.forecast-pace-dot{fill:#191622;stroke:#76d8b8;stroke-width:2;vector-effect:non-scaling-stroke}
+.forecast-legend i.forecast-legend-pace{border-top:2px dotted #76d8b8}
+.interactive-quota-chart .forecast-plot svg{height:180px;cursor:crosshair;touch-action:pan-y;border-radius:4px}
+.interactive-quota-chart .forecast-plot svg:focus-visible{outline:2px solid #c3a8ff;outline-offset:5px}
+.forecast-cursor-line{stroke:#b6a1cc;stroke-width:1;stroke-dasharray:3 4}
+.forecast-interaction-hint{margin:8px 0 5px 40px;font-size:10px;line-height:1.5;color:#bdb1ca}
+.quota-inspector{position:fixed;z-index:1000;width:min(320px,calc(100vw - 16px));box-sizing:border-box;padding:12px 14px;border:1px solid #645172;border-radius:10px;background:#251d30;color:#f1eafa;box-shadow:0 8px 24px #08040f55;font-size:11px;line-height:1.5;pointer-events:none}
+.quota-inspector-title{display:flex;align-items:center;gap:8px}.quota-inspector-title strong{overflow-wrap:anywhere;min-width:0;font-weight:600}
+.quota-inspector-date{color:#c2b5d0;margin:5px 0 10px}
+.quota-inspector dl{margin:0}.quota-inspector dl>div{display:flex;align-items:baseline;justify-content:space-between;gap:14px;padding:5px 0}
+.quota-inspector dt{color:#c2b5d0;max-width:60%}.quota-inspector dd{margin:0;text-align:right;font-weight:600;font-variant-numeric:tabular-nums}
+.quota-inspector-note{color:#c2b5d0;margin:9px 0 0;padding-top:8px;border-top:1px solid #645172;font-size:10px}
+html[data-theme="light"] .interactive-quota-chart{--quota-depleted:#b62e49}
+html[data-theme="light"] .forecast-pace-line{stroke:#18765b}html[data-theme="light"] .forecast-pace-dot{fill:#fcfaff;stroke:#18765b}html[data-theme="light"] .forecast-legend i.forecast-legend-pace{border-color:#18765b}
+html[data-theme="light"] .forecast-interaction-hint{color:#675576}
+html[data-theme="light"] .quota-inspector{background:#fdfaff;color:#382345;border-color:#d5c3e8;box-shadow:0 8px 24px #36204b22}
+html[data-theme="light"] .quota-inspector dt,html[data-theme="light"] .quota-inspector-date,html[data-theme="light"] .quota-inspector-note{color:#675576}html[data-theme="light"] .quota-inspector-note{border-color:#e4d8ee}
+@media(max-width:700px){.interactive-quota-chart .forecast-chart-heading{align-items:flex-start;flex-direction:column;gap:6px}.interactive-quota-chart .forecast-legend{justify-content:flex-start}.interactive-quota-chart .forecast-plot svg{height:160px}}
+
+/* Forecast motion: interruptible tracking and a slower, quiet view change. */
+.forecast-page .forecast-mode::before{transition:transform 620ms cubic-bezier(.16,1,.3,1)}
+.forecast-page .forecast-mode button{transition:color 240ms ease,transform 180ms ease}
+.forecast-page .forecast-mode button:active,.forecast-page .forecast-select-trigger:active{transform:scale(.96)}
+.forecast-page .forecast-select-trigger{transition:background-color 260ms ease,border-color 260ms ease,transform 180ms ease}
+.forecast-page .forecast-select-trigger>svg{transition:transform 420ms cubic-bezier(.16,1,.3,1)}
+.forecast-page .forecast-select-menu{transform-origin:top center;animation:forecast-menu-reveal 360ms cubic-bezier(.16,1,.3,1) both}
+.forecast-page .forecast-select-option{transition:background-color 180ms ease,color 180ms ease}
+.forecast-selected-name{animation:forecast-name-reveal 320ms cubic-bezier(.16,1,.3,1)}
+.quota-series{transition:opacity 420ms cubic-bezier(.16,1,.3,1)}
+.quota-tracker{transition:transform 140ms cubic-bezier(.2,0,0,1)}
+.quota-inspection-points ellipse{transition:cx 180ms cubic-bezier(.2,0,0,1),cy 180ms cubic-bezier(.2,0,0,1),fill 240ms ease}
+.quota-inspector{left:0;top:0;padding:0;border:0;background:transparent;box-shadow:none;opacity:0;transition:transform 180ms cubic-bezier(.2,0,0,1),opacity 180ms ease}
+.quota-inspector.is-visible{opacity:1}
+.quota-inspector-surface{padding:12px 14px;border:1px solid #645172;border-radius:10px;background:#251d30;box-shadow:0 8px 24px #08040f55;transform-origin:top left;animation:forecast-tooltip-reveal 260ms cubic-bezier(.16,1,.3,1) both}
+html[data-theme="light"] .quota-inspector{background:transparent;border:0;box-shadow:none}
+html[data-theme="light"] .quota-inspector-surface{background:#fdfaff;border-color:#d5c3e8;box-shadow:0 8px 24px #36204b22}
+@keyframes forecast-menu-reveal{from{opacity:0;transform:translateY(-5px) scale(.985)}to{opacity:1;transform:translateY(0) scale(1)}}
+@keyframes forecast-name-reveal{from{opacity:.35;transform:translateY(3px)}to{opacity:1;transform:translateY(0)}}
+@keyframes forecast-tooltip-reveal{from{opacity:0;transform:translateY(4px) scale(.985)}to{opacity:1;transform:translateY(0) scale(1)}}
+@media(prefers-reduced-motion:reduce){.forecast-page,.forecast-page .page-enter,.forecast-page .forecast-mode::before,.forecast-page .forecast-mode button,.forecast-page .forecast-select-trigger,.forecast-page .forecast-select-trigger>svg,.forecast-page .forecast-select-menu,.forecast-selected-name,.quota-series,.quota-tracker,.quota-inspection-points ellipse,.quota-inspector,.quota-inspector-surface{animation:none!important;transition:none!important}.forecast-page .forecast-mode button:active,.forecast-page .forecast-select-trigger:active{transform:none}}

@@ -9,6 +9,28 @@ const MIN_SAMPLE_MS=2*60*1000;
 const MIN_TREND_MS=15*60*1000;
 const MAX_POINTS=18000;
 
+export function usagePace(point:UsagePoint|undefined,now:number){
+ if(!point||!Number.isFinite(now)||!Number.isFinite(point.used)||point.used<0||point.used>100)return null;
+ const end=point.resetAt*1000,duration=point.durationMins;
+ if(!Number.isFinite(end)||end<=now||!duration||!Number.isFinite(duration)||duration<=0)return null;
+ const start=end-duration*60_000;
+ if(now<start||point.at<start||point.at>end)return null;
+ const remaining=100-point.used;
+ const targetRemaining=(end-now)/(end-start)*100;
+ const hourlyBudget=remaining/((end-now)/3_600_000);
+ return {start,end,remaining,targetRemaining,gap:remaining-targetRemaining,hourlyBudget};
+}
+
+export function inspectUsage(points:UsagePoint[],at:number,now:number){
+ if(!points.length||!Number.isFinite(at))return null;
+ const latest=points[points.length-1];
+ const current=points.filter(point=>point.resetAt===latest.resetAt);
+ const point=current.reduce((nearest,item)=>Math.abs(item.at-at)<Math.abs(nearest.at-at)?item:nearest,current[0]);
+ const estimate=estimateUsage(current,now);
+ const predictedRemaining=at>latest.at&&at<=latest.resetAt*1000&&estimate.rate!==undefined?Math.max(0,100-latest.used-(at-latest.at)*estimate.rate):null;
+ return {point,predictedRemaining};
+}
+
 export function readUsageHistory():UsagePoint[]{
  try{
   const value:unknown=JSON.parse(localStorage.getItem('nivra-usage-history-v1')||'[]');
