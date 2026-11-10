@@ -9,7 +9,7 @@ import { getCurrentWindow } from '@tauri-apps/api/window';
 import { ArrowDownLeft, ArrowUpRight, ChevronDown, Clock3, ExternalLink, Info, Link2, LoaderCircle, Maximize2, Minus, Moon, PanelLeftClose, PanelLeftOpen, RefreshCw, Settings2, Sparkles, Sun, Trash2, X } from 'lucide-react';
 import brandIcon from './assets/nivra-taskbar.png';
 import summaryAccounts from './assets/summary-accounts.png';
-import summaryServices from './assets/summary-services.png';
+import summaryServices from './assets/summary-services-v2.png';
 import summaryClock from './assets/summary-clock.png';
 import reorderIcon from './assets/reorder-icon.png';
 import forecastIcon from './assets/forecast-icon.png';
