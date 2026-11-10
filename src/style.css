@@ -34,10 +34,10 @@ html,body,#root{height:100%}body{overflow:hidden}.shell,html[data-theme="light"]
 .account-list .card-footer{min-height:27px}
 
 /* Laisser deviner le fond animé derrière les comptes. */
-.account-list .account-card{background:radial-gradient(ellipse at 8% 0%,rgba(153,117,221,.12),transparent 48%),linear-gradient(130deg,rgba(26,22,35,.9),rgba(17,16,23,.88));border-color:rgba(223,207,255,.13);backdrop-filter:blur(24px) saturate(115%);-webkit-backdrop-filter:blur(24px) saturate(115%);box-shadow:inset 0 1px 0 rgba(255,255,255,.055),0 8px 24px rgba(8,5,16,.13);transition:border-color .2s ease,box-shadow .2s ease,background-color .2s ease}
-.account-list .account-card:hover{border-color:rgba(218,199,255,.25);box-shadow:inset 0 1px 0 rgba(255,255,255,.075),0 10px 28px rgba(8,5,16,.18)}
+:is(.account-list,.cursor-grok-section) .account-card{background:radial-gradient(ellipse at 8% 0%,rgba(153,117,221,.12),transparent 48%),linear-gradient(130deg,rgba(26,22,35,.9),rgba(17,16,23,.88));border-color:rgba(223,207,255,.13);backdrop-filter:blur(24px) saturate(115%);-webkit-backdrop-filter:blur(24px) saturate(115%);box-shadow:inset 0 1px 0 rgba(255,255,255,.055),0 8px 24px rgba(8,5,16,.13);transition:border-color .2s ease,box-shadow .2s ease,background-color .2s ease}
+:is(.account-list,.cursor-grok-section) .account-card:hover{border-color:rgba(218,199,255,.25);box-shadow:inset 0 1px 0 rgba(255,255,255,.075),0 10px 28px rgba(8,5,16,.18)}
 .account-list .card-footer{background:transparent;border-top-color:rgba(225,212,255,.07)}
-html[data-theme="light"] .account-list .account-card{background:radial-gradient(ellipse at 8% 0%,rgba(199,174,245,.22),transparent 48%),linear-gradient(130deg,rgba(255,255,255,.9),rgba(249,246,253,.87));border-color:rgba(108,78,148,.13);box-shadow:inset 0 1px 0 rgba(255,255,255,.85),0 8px 24px rgba(58,35,83,.08)}
+html[data-theme="light"] :is(.account-list,.cursor-grok-section) .account-card{background:radial-gradient(ellipse at 8% 0%,rgba(199,174,245,.22),transparent 48%),linear-gradient(130deg,rgba(255,255,255,.9),rgba(249,246,253,.87));border-color:rgba(108,78,148,.13);box-shadow:inset 0 1px 0 rgba(255,255,255,.85),0 8px 24px rgba(58,35,83,.08)}
 html[data-theme="light"] .account-list .card-footer{background:transparent;border-top-color:rgba(108,78,148,.09)}
 
 .progress span{position:relative;overflow:hidden;background:linear-gradient(105deg,#8466df 0%,#b99af5 25%,#f0dfff 42%,#a684ec 58%,#8466df 80%);background-size:220% 100%;animation:quota-shimmer 3.8s ease-in-out infinite alternate}
@@ -214,3 +214,5 @@ html[data-theme="light"] .quota-inspector-surface{background:#fdfaff;border-colo
 @keyframes forecast-name-reveal{from{opacity:.35;transform:translateY(3px)}to{opacity:1;transform:translateY(0)}}
 @keyframes forecast-tooltip-reveal{from{opacity:0;transform:translateY(4px) scale(.985)}to{opacity:1;transform:translateY(0) scale(1)}}
 @media(prefers-reduced-motion:reduce){.forecast-page,.forecast-page .page-enter,.forecast-page .forecast-mode::before,.forecast-page .forecast-mode button,.forecast-page .forecast-select-trigger,.forecast-page .forecast-select-trigger>svg,.forecast-page .forecast-select-menu,.forecast-selected-name,.quota-series,.quota-tracker,.quota-inspection-points ellipse,.quota-inspector,.quota-inspector-surface{animation:none!important;transition:none!important}.forecast-page .forecast-mode button:active,.forecast-page .forecast-select-trigger:active{transform:none}}
+
+.provider-mark.xai>svg{fill:#fff}html[data-theme="light"] .provider-mark.xai>svg{fill:#000}

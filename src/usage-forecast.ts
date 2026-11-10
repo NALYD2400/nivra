@@ -1,13 +1,14 @@
-export type UsageWindow = 'primary'|'secondary';
+export type UsageWindow = 'primary'|'secondary'|`cursor:${string}`;
 export type UsagePoint = { accountId:string; window:UsageWindow; at:number; used:number; resetAt:number; durationMins:number|null };
 export type ForecastLimit = {usedPercent:number;windowDurationMins:number|null;resetsAt:number|null};
-export type UsageLimits = {primary?:ForecastLimit|null;secondary?:ForecastLimit|null};
+export type UsageLimits = Partial<Record<UsageWindow,ForecastLimit|null>>;
 export type Estimate = {kind:'insufficient'|'stale'|'unchanged'|'after-reset'|'depleted'|'projected';at?:number;rate?:number};
 
 const RETENTION_MS=14*24*60*60*1000;
 const MIN_SAMPLE_MS=2*60*1000;
 const MIN_TREND_MS=15*60*1000;
 const MAX_POINTS=18000;
+function isUsageWindow(value:unknown):value is UsageWindow{return value==='primary'||value==='secondary'||typeof value==='string'&&/^cursor:[a-zA-Z0-9_-]{1,80}$/.test(value)}
 
 export function usagePace(point:UsagePoint|undefined,now:number){
  if(!point||!Number.isFinite(now)||!Number.isFinite(point.used)||point.used<0||point.used>100)return null;
@@ -36,15 +37,15 @@ export function readUsageHistory():UsagePoint[]{
   const value:unknown=JSON.parse(localStorage.getItem('nivra-usage-history-v1')||'[]');
   if(!Array.isArray(value))return [];
   const cutoff=Date.now()-RETENTION_MS;
-  return value.filter((p):p is UsagePoint=>Boolean(p&&typeof p.accountId==='string'&&(p.window==='primary'||p.window==='secondary')&&Number.isFinite(p.at)&&p.at>=cutoff&&p.at<=Date.now()+60000&&Number.isFinite(p.used)&&p.used>=0&&p.used<=100&&Number.isFinite(p.resetAt))).slice(-MAX_POINTS);
+  return value.filter((p):p is UsagePoint=>Boolean(p&&typeof p.accountId==='string'&&isUsageWindow(p.window)&&Number.isFinite(p.at)&&p.at>=cutoff&&p.at<=Date.now()+60000&&Number.isFinite(p.used)&&p.used>=0&&p.used<=100&&Number.isFinite(p.resetAt))).slice(-MAX_POINTS);
  }catch{return []}
 }
 
 export function recordUsage(history:UsagePoint[],accountId:string,limits:UsageLimits|undefined,now:number):UsagePoint[]{
  if(!limits)return history;
  const additions:UsagePoint[]=[];
- for(const window of ['primary','secondary'] as const){
-  const limit=limits[window];
+ for(const [window,limit] of Object.entries(limits)){
+  if(!isUsageWindow(window))continue;
   if(!limit||!Number.isFinite(limit.usedPercent)||limit.usedPercent<0||limit.usedPercent>100||!limit.resetsAt||!Number.isFinite(limit.resetsAt)||limit.resetsAt*1000<=now)continue;
   let previous:UsagePoint|undefined;
   for(let i=history.length-1;i>=0;i--){const point=history[i];if(point.accountId===accountId&&point.window===window&&point.resetAt===limit.resetsAt){previous=point;break}}

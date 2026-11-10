@@ -1,4 +1,6 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
+mod cursor_usage;
+mod browser;
 use serde_json::{json, Value};
 use std::{io::{BufRead, BufReader, Write}, process::{Command, Stdio}, sync::mpsc, time::Duration};
 use tauri::Manager;
@@ -16,112 +18,6 @@ fn register_login(profile: &str) -> Result<(Arc<AtomicBool>, LoginGuard), String
 #[tauri::command]
 fn cancel_login(profile: String) {
     if let Ok(tasks) = LOGIN_TASKS.get_or_init(Default::default).lock() { if let Some(flag) = tasks.get(&profile) { flag.store(true, Ordering::Relaxed); } }
-}
-
-#[cfg(windows)]
-mod local_account {
-    use std::ffi::{c_char, c_int, c_void, CStr, CString};
-    #[link(name = "winsqlite3")]
-    extern "C" {
-        fn sqlite3_open_v2(path: *const c_char, db: *mut *mut c_void, flags: c_int, vfs: *const c_char) -> c_int;
-        fn sqlite3_prepare_v2(db: *mut c_void, sql: *const c_char, n: c_int, stmt: *mut *mut c_void, tail: *mut *const c_char) -> c_int;
-        fn sqlite3_step(stmt: *mut c_void) -> c_int;
-        fn sqlite3_column_text(stmt: *mut c_void, col: c_int) -> *const u8;
-        fn sqlite3_finalize(stmt: *mut c_void) -> c_int;
-        fn sqlite3_close(db: *mut c_void) -> c_int;
-    }
-    pub fn email(service: &str, profile: Option<&std::path::Path>) -> Result<String, String> {
-        let (folder, query) = match service {
-            "Cursor" => ("Cursor", "SELECT value FROM ItemTable WHERE key = 'cursorAuth/cachedEmail' LIMIT 1"),
-            "Antigravity" => ("Antigravity", "SELECT value FROM ItemTable WHERE key = 'antigravityAuthStatus' LIMIT 1"),
-            _ => return Err("Service inconnu".into()),
-        };
-        let path = std::env::var_os("APPDATA").ok_or("Dossier Windows inaccessible")?;
-        let path = profile.map(std::path::Path::to_path_buf).unwrap_or_else(|| std::path::PathBuf::from(path).join(folder)).join("User/globalStorage/state.vscdb");
-        if !path.is_file() { return Err(format!("Ouvre {folder} et connecte ton compte, puis réessaie.")); }
-        let path = CString::new(path.to_string_lossy().as_bytes()).map_err(|_| "Chemin invalide")?;
-        let query = CString::new(query).map_err(|_| "Requête invalide")?;
-        unsafe {
-            let mut db = std::ptr::null_mut();
-            if sqlite3_open_v2(path.as_ptr(), &mut db, 1, std::ptr::null()) != 0 { if !db.is_null() { sqlite3_close(db); } return Err("Impossible de lire le compte local.".into()); }
-            let mut stmt = std::ptr::null_mut();
-            let result = if sqlite3_prepare_v2(db, query.as_ptr(), -1, &mut stmt, std::ptr::null_mut()) == 0 && sqlite3_step(stmt) == 100 {
-                let value = sqlite3_column_text(stmt, 0);
-                if value.is_null() { None } else {
-                    let value = CStr::from_ptr(value.cast()).to_string_lossy();
-                    if service == "Cursor" { Some(value.into_owned()) } else { serde_json::from_str::<serde_json::Value>(&value).ok().and_then(|v| v["email"].as_str().map(str::to_owned)) }
-                }
-            } else { None };
-            if !stmt.is_null() { sqlite3_finalize(stmt); }
-            sqlite3_close(db);
-            result.filter(|email| email.contains('@') && email.len() <= 320).ok_or_else(|| format!("Aucun compte trouvé. Connecte-toi dans {folder}, puis réessaie."))
-        }
-    }
-}
-
-#[tauri::command]
-async fn existing_service_account(service: String) -> Result<String, String> {
-    tauri::async_runtime::spawn_blocking(move || {
-        #[cfg(windows)] { local_account::email(&service, None) }
-        #[cfg(not(windows))] { let _ = service; Err("Import disponible uniquement sur Windows.".into()) }
-    }).await.map_err(|_| "Lecture du compte interrompue".to_string())?
-}
-
-#[tauri::command]
-async fn antigravity_usage() -> Result<Value, String> {
-    tauri::async_runtime::spawn_blocking(move || {
-        #[cfg(windows)] {
-            let mut command = Command::new("powershell.exe");
-            command.args(["-NoProfile", "-NonInteractive", "-Command", include_str!("antigravity_usage.ps1")]).stdin(Stdio::null()).stderr(Stdio::null());
-            command.creation_flags(0x08000000);
-            let output = command.output().map_err(|_| "Lecture Antigravity indisponible.".to_string())?;
-            if !output.status.success() { return Err("Quotas indisponibles. Vérifie qu’Antigravity est ouvert et connecté.".into()); }
-            serde_json::from_slice(&output.stdout).map_err(|_| "Réponse Antigravity illisible.".to_string())
-        }
-        #[cfg(not(windows))] { Err("Lecture Antigravity disponible uniquement sur Windows.".into()) }
-    }).await.map_err(|_| "Lecture Antigravity interrompue".to_string())?
-}
-
-#[cfg(windows)]
-fn cursor_profile(app: &tauri::AppHandle, profile: &str) -> Result<std::path::PathBuf, String> {
-    if profile.len() != 36 || !profile.chars().all(|c| c.is_ascii_hexdigit() || c == '-') { return Err("Identifiant de compte invalide".into()); }
-    Ok(app.path().app_data_dir().map_err(|_| "Dossier de l’application inaccessible".to_string())?.join("cursor-profiles").join(profile))
-}
-
-#[cfg(windows)]
-fn open_cursor(home: &std::path::Path) -> Result<(), String> {
-    let local = std::env::var_os("LOCALAPPDATA").map(std::path::PathBuf::from).map(|p| p.join("Programs/cursor/Cursor.exe"));
-    let program = std::env::var_os("PROGRAMFILES").map(std::path::PathBuf::from).map(|p| p.join("cursor/Cursor.exe"));
-    let executable = [local, program].into_iter().flatten().find(|p| p.is_file()).ok_or("Cursor est introuvable. Installe l’application Cursor.")?;
-    Command::new(executable).arg("--user-data-dir").arg(home).arg("--new-window").spawn().map_err(|_| "Impossible d’ouvrir le profil Cursor".to_string())?;
-    Ok(())
-}
-
-#[tauri::command]
-fn open_cursor_profile(app: tauri::AppHandle, profile: String) -> Result<(), String> {
-    #[cfg(windows)] { let home = cursor_profile(&app, &profile)?; if !home.is_dir() { return Err("Profil Cursor introuvable.".into()); } open_cursor(&home) }
-    #[cfg(not(windows))] { let _ = (app, profile); Err("Profil Cursor disponible uniquement sur Windows.".into()) }
-}
-
-#[tauri::command]
-async fn login_cursor(app: tauri::AppHandle, profile: String) -> Result<String, String> {
-    let (cancelled, guard) = register_login(&profile)?;
-    tauri::async_runtime::spawn_blocking(move || {
-        let _guard = guard;
-        #[cfg(windows)] {
-            let home = cursor_profile(&app, &profile)?;
-            std::fs::create_dir_all(&home).map_err(|_| "Impossible de créer le profil Cursor".to_string())?;
-            open_cursor(&home)?;
-            let deadline = std::time::Instant::now() + Duration::from_secs(300);
-            while std::time::Instant::now() < deadline {
-                if cancelled.load(Ordering::Relaxed) { return Err("Connexion annulée.".into()); }
-                if let Ok(email) = local_account::email("Cursor", Some(&home)) { return Ok(email); }
-                std::thread::sleep(Duration::from_secs(2));
-            }
-            Err("Aucun compte détecté dans le profil Cursor. Réessaie et connecte-toi dans la fenêtre ouverte.".into())
-        }
-        #[cfg(not(windows))] { let _ = (app, profile); Err("Connexion Cursor disponible uniquement sur Windows.".into()) }
-    }).await.map_err(|_| "Connexion Cursor interrompue".to_string())?
 }
 
 #[tauri::command]
@@ -258,9 +154,7 @@ async fn disconnect_codex(app: tauri::AppHandle, profile: String) -> Result<(), 
 
 #[tauri::command]
 fn open_usage(service: &str) -> Result<(), String> {
-    let url=match service { "Codex"=>"https://chatgpt.com/settings/usage", "Claude Code"=>"https://claude.ai/settings/usage", "Cursor"=>"https://cursor.com/settings", "Antigravity"=>"https://antigravity.google/", _=>return Err("Service inconnu".into()) };
-    let mut cmd=Command::new("explorer.exe"); cmd.arg(url);
-    #[cfg(windows)] cmd.creation_flags(0x08000000);
-    cmd.spawn().map_err(|_| "Impossible d'ouvrir le navigateur".to_string())?; Ok(())
+    let url=match service { "Codex"=>"https://chatgpt.com/settings/usage", "Claude Code"=>"https://claude.ai/settings/usage", "Cursor"=>"https://cursor.com/dashboard", "xAI / Grok"=>"https://grok.com/dashboard", _=>return Err("Service inconnu".into()) };
+    browser::open(url)
 }
-fn main(){ tauri::Builder::default().plugin(tauri_plugin_updater::Builder::new().build()).plugin(tauri_plugin_process::init()).invoke_handler(tauri::generate_handler![codex_usage,login_codex,disconnect_codex,claude_account,login_claude,disconnect_claude,existing_service_account,antigravity_usage,login_cursor,open_cursor_profile,cancel_login,open_usage]).run(tauri::generate_context!()).expect("Erreur au lancement de Quota"); }
+fn main(){ tauri::Builder::default().plugin(tauri_plugin_updater::Builder::new().build()).plugin(tauri_plugin_process::init()).invoke_handler(tauri::generate_handler![cursor_usage::cursor_usage,cursor_usage::login_cursor,codex_usage,login_codex,disconnect_codex,claude_account,login_claude,disconnect_claude,cancel_login,open_usage]).run(tauri::generate_context!()).expect("Erreur au lancement de Quota"); }

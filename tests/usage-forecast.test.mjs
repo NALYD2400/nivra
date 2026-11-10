@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { estimateUsage, recordUsage, usagePace, inspectUsage } from '../src/usage-forecast.ts';
+import { estimateUsage, recordUsage, usagePace, inspectUsage, readUsageHistory } from '../src/usage-forecast.ts';
+import {cursorForecastSource,comparisonGroups,forecastWindows} from '../src/quota-forecast.ts';
 
 const minute=60_000;
 const start=1_750_000_000_000;
@@ -84,4 +85,72 @@ test('chart inspection distinguishes measured readings from future estimates',()
  assert.equal(inspectUsage([history[0]],start+30*minute,start).predictedRemaining,null);
  assert.equal(inspectUsage(history,start+30*minute,start+60*minute).predictedRemaining,null);
  assert.equal(inspectUsage([],start,start),null);
+});
+
+const weeklyReset=new Date(start+7*24*60*minute).toISOString();
+const cursorAccount=(windows,extra={})=>({id:'cursor-user',email:'test@example.com',plan:'Premium',unified:true,warning:null,windows,...extra});
+
+test('a connected unified account records its shared weekly pool once and keeps depleted quotas',()=>{
+ const source=cursorForecastSource(cursorAccount([
+  {kind:'shared',label:'Réserve commune',used:100,reset:weeklyReset},
+  {kind:'totalPercentUsed',label:'Ancien compteur',used:25,reset:weeklyReset}
+ ]));
+ assert.equal(source.account.id,'cursor:cursor-user');
+ assert.deepEqual(source.account.windows,[{id:'cursor:shared',label:'Réserve commune'}]);
+ const history=recordUsage([],source.account.id,source.limits,start);
+ assert.equal(history.length,1);
+ assert.equal(history[0].durationMins,10080);
+ assert.equal(estimateUsage(history,start).kind,'depleted');
+ assert.equal(usagePace(history[0],start).hourlyBudget,0);
+ assert.equal(forecastWindows(source.account,history).length,1);
+ assert.equal(cursorForecastSource(cursorAccount([],{id:'other-user'})).account.id,'cursor:other-user');
+});
+
+test('unknown quota and renewal values never become zero usage or invented forecasts',()=>{
+ for(const window of [
+  {kind:'shared',label:'Réserve',used:null,reset:weeklyReset},
+  {kind:'shared',label:'Réserve',used:0,reset:'invalid'},
+  {kind:'shared',label:'Réserve',used:101,reset:weeklyReset}
+ ]){
+  const source=cursorForecastSource(cursorAccount([window]));
+  assert.equal(recordUsage([],source.account.id,source.limits,start).length,0);
+ }
+ const source=cursorForecastSource(cursorAccount([{kind:'totalPercentUsed',label:'Total',used:50,reset:weeklyReset}],{unified:false}));
+ assert.equal(source.limits['cursor:totalPercentUsed'].windowDurationMins,null);
+});
+
+test('legacy Cursor limits keep the actual billing cycle and their individual series',()=>{
+ const source=cursorForecastSource(cursorAccount([
+  {kind:'totalPercentUsed',label:'Total',used:20,start:new Date(start).toISOString(),reset:new Date(start+30*24*60*minute).toISOString()},
+  {kind:'autoPercentUsed',label:'Cursor',used:40,reset:weeklyReset},
+  {kind:'apiPercentUsed',label:'Autres modèles',used:60,reset:weeklyReset}
+ ],{unified:false}));
+ const history=recordUsage([],source.account.id,source.limits,start);
+ assert.equal(history.length,3);
+ assert.equal(history.find(point=>point.window==='cursor:totalPercentUsed').durationMins,43200);
+ assert.equal(comparisonGroups([source.account],history).length,3);
+});
+
+test('comparison groups five-hour limits separately and compares weekly pools without double counting',()=>{
+ const codex={id:'codex',name:'Codex account',service:'Codex'};
+ const source=cursorForecastSource(cursorAccount([{kind:'shared',label:'Réserve commune',used:0.3,reset:weeklyReset}]));
+ let history=recordUsage([],codex.id,{primary:limit(10).primary,secondary:{usedPercent:20,resetsAt:Date.parse(weeklyReset)/1000,windowDurationMins:10080}},start);
+ history=recordUsage(history,source.account.id,source.limits,start);
+ const groups=comparisonGroups([codex,source.account],history);
+ assert.equal(groups.length,2);
+ assert.deepEqual(groups.find(group=>group.key==='duration:300').items.map(item=>item.account.id),['codex']);
+ assert.deepEqual(groups.find(group=>group.key==='duration:10080').items.map(item=>item.account.id),['codex','cursor:cursor-user']);
+ assert.equal(comparisonGroups([codex],history).flatMap(group=>group.items).some(item=>item.account.id===source.account.id),false);
+});
+
+test('persisted shared readings survive reload alongside existing Codex history',()=>{
+ const now=Date.now();
+ const source=cursorForecastSource(cursorAccount([{kind:'shared',label:'Réserve commune',used:0.3,reset:new Date(now+7*24*60*minute).toISOString()}]));
+ const history=recordUsage([],source.account.id,source.limits,now);
+ const previous=globalThis.localStorage;
+ globalThis.localStorage={getItem:()=>JSON.stringify(history)};
+ try{
+  // Import the reader already used by the app; no credential or provider call is involved.
+  assert.equal(readUsageHistory()[0].window,'cursor:shared');
+ }finally{if(previous===undefined)delete globalThis.localStorage;else globalThis.localStorage=previous}
 });

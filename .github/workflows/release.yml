@@ -24,7 +24,13 @@ jobs:
           $version = (Get-Content src-tauri/tauri.conf.json -Raw | ConvertFrom-Json).version
           if ("v$version" -ne "${{ github.ref_name }}") { throw "Le tag doit correspondre à la version de Nivra." }
       - run: npm ci
+      - name: Vérifier les prévisions et le déplacement des comptes
+        run: npm test
+      - run: npm run build
+      - name: Vérifier les lectures et la protection des sessions
+        run: cargo test --release --locked --manifest-path src-tauri/Cargo.toml
       - uses: tauri-apps/tauri-action@v1
+        id: tauri
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
@@ -32,6 +38,16 @@ jobs:
         with:
           tagName: ${{ github.ref_name }}
           releaseName: Nivra ${{ github.ref_name }}
-          releaseBody: Télécharge Nivra pour Windows avec le programme d’installation ci-dessous.
-          releaseDraft: false
+          releaseBody: |
+            Nouvelle page Services, connexion et quotas Cursor / Grok, comptes réunis et réorganisables, prévisions adaptées aux périodes des services.
+
+            Le suivi de la réserve unifiée Cursor / Grok est hebdomadaire. Les quotas Claude restent indisponibles.
+
+            Télécharge Nivra pour Windows avec le programme d’installation ci-dessous. Les installations existantes peuvent utiliser Réglages → Mises à jour.
+          releaseDraft: true
           prerelease: false
+      - name: Vérifier les artefacts et publier la release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: ./scripts/verify-release.ps1 -Tag '${{ github.ref_name }}' -Repository '${{ github.repository }}' -Publish

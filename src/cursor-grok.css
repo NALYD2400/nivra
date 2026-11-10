@@ -1,0 +1,12 @@
+.cursor-grok-section{display:grid;gap:16px;margin-top:32px}
+.cursor-grok-section .section-header{align-items:center;margin:0;gap:20px}
+.cursor-grok-section .section-header>div{min-width:0}
+.cursor-grok-section .section-header p{line-height:1.6;max-width:58ch}
+.cursor-grok-section .section-header .button{display:inline-flex;align-items:center;gap:8px;flex:none;font-size:11px;min-height:40px}
+.account-list .cursor-account-card{cursor:default}
+.account-list .cursor-account-card[data-account-id]{cursor:grab}
+.account-list .cursor-account-card.is-dragging{cursor:grabbing}
+.cursor-account-card .account-title{flex-wrap:wrap}
+.cursor-account-card .cursor-grok-windows{grid-template-columns:repeat(auto-fit,minmax(min(230px,100%),1fr))}
+.accounts-heading+.account-list{margin-top:20px}
+@media(max-width:700px){.cursor-grok-section .section-header{align-items:flex-start;gap:14px}}

@@ -4,12 +4,16 @@ import { ArrowUpRight, CalendarClock, Check, ChevronDown, Info, LineChart } from
 import openaiWhite from './assets/brands/openai-white.svg';
 import openaiBlack from './assets/brands/openai-black.svg';
 import claudeIcon from './assets/brands/claude.svg';
+import cursorLight from './assets/brands/cursor-light.svg';
+import cursorDark from './assets/brands/cursor-dark.svg';
+import {comparisonGroups,forecastWindows,type ForecastAccount} from './quota-forecast';
 import { estimateUsage, inspectUsage, usagePace, type UsagePoint, type UsageWindow } from './usage-forecast';
 
-type Account = {id:string;name:string;service:'Codex'|'Claude Code'};
+type Account = ForecastAccount;
 type Props = {accounts:Account[];history:UsagePoint[];icon:string;onOpenAccounts:()=>void};
 
-function AccountLogo({service}:{service:Account['service']}){return <span className="forecast-provider-mark" aria-hidden="true">{service==='Claude Code'?<img src={claudeIcon} alt=""/>:<><img className="forecast-logo-dark" src={openaiWhite} alt=""/><img className="forecast-logo-light" src={openaiBlack} alt=""/></>}</span>}
+function AccountLogo({service}:{service:Account['service']}){return <span className="forecast-provider-mark" aria-hidden="true">{service==='Claude Code'?<img src={claudeIcon} alt=""/>:service==='xAI / Grok'?<svg viewBox="0 0 24 24" width="19" height="19" fill="currentColor"><path d="M4 4h4l12 16h-4L4 4Zm14 0h2L6 20H4L18 4Z"/></svg>:service==='Cursor'?<><img className="forecast-logo-dark" src={cursorDark} alt=""/><img className="forecast-logo-light" src={cursorLight} alt=""/></>:<><img className="forecast-logo-dark" src={openaiWhite} alt=""/><img className="forecast-logo-light" src={openaiBlack} alt=""/></>}</span>}
+
 
 function AccountSelect({accounts,current,onSelect}:{accounts:Account[];current:string;onSelect:(id:string)=>void}){
  const [open,setOpen]=useState(false);
@@ -40,6 +44,7 @@ function AccountSelect({accounts,current,onSelect}:{accounts:Account[];current:s
  </div>;
 }
 
+function percent(value:number){return new Intl.NumberFormat('fr-FR',{maximumFractionDigits:1}).format(Math.max(0,Math.min(100,value)))}
 function dateTime(time:number){return new Intl.DateTimeFormat('fr-FR',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}).format(time)}
 function fullDateTime(time:number){return new Intl.DateTimeFormat('fr-FR',{weekday:'long',day:'numeric',month:'long',hour:'2-digit',minute:'2-digit'}).format(time)}
 function duration(minutes:number|null,fallback:string){if(!minutes)return fallback;if(minutes===10080)return 'Semaine';if(minutes>=1440)return `${Math.round(minutes/1440*10)/10} j`;if(minutes>=60)return `${Math.round(minutes/60*10)/10} h`;return `${minutes} min`}
@@ -136,9 +141,9 @@ function QuotaChart({series,now,label}:{series:ChartSeries[];now:number;label:st
   {shownCursor&&active&&inspected&&createPortal(<div ref={tooltip} id={tooltipId} role="tooltip" aria-hidden={!cursor} className={`quota-inspector${cursor?" is-visible":""}`} style={{transform:`translate3d(${position.left}px,${position.top}px,0)`}}><div className="quota-inspector-surface">
    <div className="quota-inspector-title"><span className="comparison-dot" style={{backgroundColor:active.color}}/><strong>{active.account.name}</strong></div>
    <p className="quota-inspector-date">{dateTime(shownCursor.at)}</p>
-   <dl><div><dt>Relevé · {dateTime(inspected.point.at)}</dt><dd>{Math.round(100-inspected.point.used)} % restants</dd></div>
-   {targetAtCursor!==null&&<div><dt>Rythme conseillé à cette date</dt><dd>{Math.round(targetAtCursor)} % restants</dd></div>}
-   {inspected.predictedRemaining!==null&&<div><dt>Prévision à cette date</dt><dd>{Math.round(inspected.predictedRemaining)} % restants</dd></div>}
+   <dl><div><dt>Relevé · {dateTime(inspected.point.at)}</dt><dd>{percent(100-inspected.point.used)} % restants</dd></div>
+   {targetAtCursor!==null&&<div><dt>Rythme conseillé à cette date</dt><dd>{percent(targetAtCursor)} % restants</dd></div>}
+   {inspected.predictedRemaining!==null&&<div><dt>Prévision à cette date</dt><dd>{percent(inspected.predictedRemaining)} % restants</dd></div>}
    {active.pace&&<div><dt>Budget actuel</dt><dd>{new Intl.NumberFormat('fr-FR',{maximumFractionDigits:1}).format(active.pace.hourlyBudget*(active.last.durationMins!>=1440?24:1))} % /{active.last.durationMins!>=1440?'jour':'heure'}</dd></div>}
    <div><dt>Renouvellement</dt><dd>{dateTime(active.last.resetAt*1000)}</dd></div></dl>
    <p className="quota-inspector-note">{active.estimate.kind==='stale'?'Relevés à actualiser.':active.last.used>=100?'Quota épuisé : attends le renouvellement.':shownCursor.at<active.points[0].at?'Aucun relevé avant le début du suivi.':active.pace&&active.pace.gap < -1?`${Math.round(-active.pace.gap)} points consommés en avance sur le rythme régulier.`:'Les petits pointillés indiquent le rythme à suivre.'}</p>
@@ -147,13 +152,14 @@ function QuotaChart({series,now,label}:{series:ChartSeries[];now:number;label:st
  </div>;
 }
 
-function WindowForecast({accountId,accountName,window,history,now}:{accountId:string;accountName:string;window:UsageWindow;history:UsagePoint[];now:number}){
+function WindowForecast({account,window,label,history,now}:{account:Account;window:UsageWindow;label:string;history:UsagePoint[];now:number}){
+ const accountId=account.id;
  const all=history.filter(p=>p.accountId===accountId&&p.window===window).sort((a,b)=>a.at-b.at);
  const last=all[all.length-1];
  const points=last?all.filter(p=>p.resetAt===last.resetAt):[];
  const estimate=estimateUsage(points,now);
- const name=duration(last?.durationMins??null,window==='primary'?'Limite principale':'Limite secondaire');
- const remaining=last?Math.max(0,Math.min(100,Math.round(100-last.used))):null;
+ const name=duration(last?.durationMins??null,label);
+ const remaining=last?percent(100-last.used):null;
  let headline='En attente de relevés';
  if(estimate.kind==='insufficient'&&last){headline='Pas encore assez de recul'}
  if(estimate.kind==='stale'){headline='Données à actualiser'}
@@ -163,15 +169,15 @@ function WindowForecast({accountId,accountName,window,history,now}:{accountId:st
  if(estimate.kind==='projected'&&estimate.at){headline=estimate.at<=now?'Ton quota est peut-être épuisé':'Épuisement prévu avant renouvellement'}
  return <section className="forecast-card"><div className="forecast-card-head"><div><h2>{name}</h2><p className="forecast-status">{headline}</p></div><div className="forecast-remaining">{remaining===null?'—':<>{remaining}<small>%</small></>}<span>restant</span></div></div>
   <div className="forecast-reset"><CalendarClock size={14}/><span>Renouvellement :</span><strong>{last?fullDateTime(last.resetAt*1000):'date indisponible'}</strong></div>
-  <QuotaChart series={[{account:{id:accountId,name:accountName,service:'Codex'},color:'#c3a8ff',points}]} now={now} label={name}/>
+  <QuotaChart series={[{account,color:'#c3a8ff',points}]} now={now} label={name}/>
  </section>;
 }
 
 const accountColors=['#c3a8ff','#70d8c2','#ffb68a','#83bbff','#f497cb','#f3d379','#b9dd8f','#d6a3ef'];
-function ComparisonWindow({accounts,history,window,now}:{accounts:Account[];history:UsagePoint[];window:UsageWindow;now:number}){
- const series=accounts.map((account,index)=>{const all=history.filter(point=>point.accountId===account.id&&point.window===window).sort((a,b)=>a.at-b.at);const last=all[all.length-1];return {account,color:accountColors[index%accountColors.length],points:last?all.filter(point=>point.resetAt===last.resetAt):[]}});
+function ComparisonWindow({items,history,label,now}:{items:{account:Account;window:UsageWindow}[];history:UsagePoint[];label:string;now:number}){
+ const series=items.map(({account,window},index)=>{const all=history.filter(point=>point.accountId===account.id&&point.window===window).sort((a,b)=>a.at-b.at);const last=all[all.length-1];return {account,color:accountColors[index%accountColors.length],points:last?all.filter(point=>point.resetAt===last.resetAt):[]}});
  const durations=[...new Set(series.map(item=>item.points.at(-1)?.durationMins).filter((value):value is number=>!!value))];
- const name=duration(durations.length===1?durations[0]:null,window==='primary'?'Limite principale':'Limite secondaire');
+ const name=duration(durations.length===1?durations[0]:null,label);
  const missing=series.filter(item=>!item.points.length).length;
  return <section className="forecast-card comparison-card"><div className="comparison-head"><h2>{name}</h2><span>Quota restant</span></div><QuotaChart series={series} now={now} label={name}/>{missing>0&&<p className="comparison-unavailable">{missing} compte{missing>1?'s':''} sans quota disponible</p>}</section>;
 }
@@ -183,6 +189,9 @@ export function Forecast({accounts,history,icon,onOpenAccounts}:Props){
  const [now,setNow]=useState(()=>Date.now());
  useEffect(()=>{const timer=window.setInterval(()=>setNow(Date.now()),60000);return()=>window.clearInterval(timer)},[]);
  const current=accounts.some(a=>a.id===selected)?selected:accounts[0]?.id;
+ const account=accounts.find(account=>account.id===current);
+ const groups=useMemo(()=>comparisonGroups(accounts,history),[accounts,history]);
+ useEffect(()=>setNow(Date.now()),[history]);
  const view=useRef<HTMLDivElement>(null);
  const viewKey=`${mode}:${current??''}`;
  const previousView=useRef(viewKey);
@@ -195,7 +204,7 @@ export function Forecast({accounts,history,icon,onOpenAccounts}:Props){
  },[viewKey]);
  return <div className="forecast-page"><header className="forecast-header"><div className="forecast-heading"><img src={icon} alt=""/><h1>Prévisions</h1></div></header>
  {accounts.length===0?<div className="empty forecast-no-account"><div className="forecast-empty-icon"><LineChart size={23}/></div><div><b>Aucun compte suivi</b><p>Connecte un compte pour commencer à recueillir ses relevés.</p><button className="text-button" onClick={onOpenAccounts}>Voir mes comptes <ArrowUpRight size={14}/></button></div></div>:<><div className="forecast-controls"><div className="forecast-control-actions"><div className="forecast-mode" data-mode={mode} role="group" aria-label="Affichage des prévisions"><button type="button" title="Voir le quota restant et la prévision du compte sélectionné." aria-pressed={mode==='one'} onClick={()=>switchMode('one')}>Un compte</button><button type="button" title="Comparer les quotas restants et leur évolution pour tous tes comptes." aria-pressed={mode==='all'} onClick={()=>switchMode('all')}>Tous les comptes</button></div>{mode==='one'&&<AccountSelect accounts={accounts} current={current!} onSelect={setSelected}/>}</div></div>
- <div ref={view} key={viewKey} className="forecast-view">{mode==='all'?<div className="forecast-list"><ComparisonWindow accounts={accounts} window="primary" history={history} now={now}/><ComparisonWindow accounts={accounts} window="secondary" history={history} now={now}/></div>:accounts.find(account=>account.id===current)?.service==='Claude Code'?<div className="empty forecast-no-account"><Info size={20}/><div><b>Quotas Claude indisponibles</b><p>Nivra ne peut pas encore lire les quotas de ce compte.</p></div></div>:<div className="forecast-list"><WindowForecast accountName={accounts.find(account=>account.id===current)!.name} accountId={current!} window="primary" history={history} now={now}/><WindowForecast accountName={accounts.find(account=>account.id===current)!.name} accountId={current!} window="secondary" history={history} now={now}/></div>}</div>
+ <div ref={view} key={viewKey} className="forecast-view">{mode==='all'?<div className="forecast-list"><>{groups.map(group=><ComparisonWindow key={group.key} items={group.items} label={group.label} history={history} now={now}/>)}{!groups.length&&<div className="empty forecast-no-account"><Info size={20}/><div><b>Aucun quota disponible</b><p>Les prévisions apparaîtront dès qu’un service communiquera ses quotas.</p></div></div>}</></div>:account?.service==='Claude Code'?<div className="empty forecast-no-account"><Info size={20}/><div><b>Quotas Claude indisponibles</b><p>Nivra ne peut pas encore lire les quotas de ce compte.</p></div></div>:<div className="forecast-list">{account&&forecastWindows(account,history).map(window=><WindowForecast key={window.id} account={account} window={window.id} label={window.label} history={history} now={now}/>)}{account&&forecastWindows(account,history).length===0&&<div className="empty forecast-no-account"><Info size={20}/><div><b>Quota non communiqué</b><p>Le service n’a pas encore fourni de limite pour ce compte.</p></div></div>}</div>}</div>
  </>}
  </div>;
 }

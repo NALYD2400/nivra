@@ -1,13 +1,14 @@
 {
   "name": "quota-hub",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "private": true,
   "type": "module",
   "scripts": {
     "dev": "vite --host 127.0.0.1",
     "build": "tsc --noEmit && vite build",
     "tauri": "tauri",
-    "test:forecast": "node --experimental-strip-types --test tests/usage-forecast.test.mjs"
+    "test:forecast": "node --experimental-strip-types --test tests/usage-forecast.test.mjs",
+    "test": "node --experimental-strip-types --test tests/usage-forecast.test.mjs tests/reorder.test.mjs"
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.3.5",
