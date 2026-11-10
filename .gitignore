@@ -9,6 +9,7 @@ src-tauri/target/
 .env.*
 *.key
 *.pem
+!src-tauri/tests/fixtures/synthetic-rsa.pem
 *.pfx
 *.p12
 *.exe

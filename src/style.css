@@ -30,6 +30,7 @@ html,body,#root{height:100%}body{overflow:hidden}.shell,html[data-theme="light"]
 /* Garder les cartes pleine largeur avec moins de hauteur. */
 .account-list .account-head{padding-top:9px}
 .account-list .quota-grid{padding-top:6px;padding-bottom:8px}
+.codex-models{padding:0 20px 18px;font-size:12px;line-height:1.5}.codex-models summary{cursor:pointer;font-weight:600;padding:8px 0}.codex-models summary:focus-visible{outline:2px solid #c4b5ff;outline-offset:3px}.codex-models p{opacity:.75}.codex-models ul{max-height:180px;overflow:auto;padding-left:20px}.codex-models li{padding:3px 0}.codex-models code{opacity:.7;font-size:11px}
 .account-list .progress{margin:6px 0 5px}
 .account-list .card-footer{min-height:27px}
 
@@ -170,3 +171,6 @@ html[data-theme="light"] .comparison-tooltip-more{color:#716779}
 html[data-theme="light"] .action-button.primary,html[data-theme="light"] .action-button.ghost{background:rgba(255,255,255,.88);border-color:#d8cbe5;color:#352842}
 html[data-theme="light"] .action-button.primary:hover,html[data-theme="light"] .action-button.ghost:hover{background:#f7f1fc;border-color:#bda6d2}
 @media(max-width:580px){.page-head .action-button{width:42px;min-height:42px;padding:5px;gap:0}.page-head .action-button>span:last-child{display:none}}
+
+/* Illustrations du résumé et de la passerelle */
+.summary-art.services-art{width:62px;height:62px}.gateway-nav-icon{position:relative}.gateway-nav-icon img{position:absolute;width:72px;height:72px;max-width:none;object-fit:contain;pointer-events:none}

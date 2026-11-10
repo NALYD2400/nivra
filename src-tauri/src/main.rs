@@ -1,4 +1,33 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
+mod browser;
+mod kimi_login;
+mod xai_login;
+mod qwen_login;
+#[allow(dead_code)] mod kiro_login;
+#[allow(dead_code)] mod kiro_eventstream;
+#[allow(dead_code)] mod kiro_request;
+#[allow(dead_code)] mod kiro_response;
+#[allow(dead_code)] mod kiro_transport;
+mod kiro_usage;
+mod kiro_thinking;
+mod nous_login;
+mod grok_stream;
+mod copilot_login;
+mod chatgpt_adapter;
+#[allow(dead_code)] mod openai_identity;
+#[allow(dead_code)] mod openai_oauth;
+mod gateway;
+mod antigravity_tools;
+mod responses_adapter;
+mod messages_adapter;
+mod anthropic_upstream;
+mod google_request;
+mod antigravity_project;
+mod antigravity_tokens;
+mod antigravity_login;
+mod antigravity_cli;
+mod openrouter_login;
+mod vault;
 use serde_json::{json, Value};
 use std::{io::{BufRead, BufReader, Write}, process::{Command, Stdio}, sync::mpsc, time::Duration};
 use tauri::Manager;
@@ -103,6 +132,48 @@ fn open_cursor_profile(app: tauri::AppHandle, profile: String) -> Result<(), Str
     #[cfg(not(windows))] { let _ = (app, profile); Err("Profil Cursor disponible uniquement sur Windows.".into()) }
 }
 
+#[cfg(windows)]
+fn antigravity_profile(app: &tauri::AppHandle, profile: &str) -> Result<std::path::PathBuf, String> {
+    if profile.len() != 36 || !profile.chars().all(|c| c.is_ascii_hexdigit() || c == '-') { return Err("Identifiant de compte invalide".into()); }
+    Ok(app.path().app_data_dir().map_err(|_| "Dossier de l’application inaccessible".to_string())?.join("antigravity-profiles").join(profile))
+}
+
+#[cfg(windows)]
+fn open_antigravity(home: &std::path::Path) -> Result<(), String> {
+    let local = std::env::var_os("LOCALAPPDATA").map(std::path::PathBuf::from).map(|p| p.join("Programs/Antigravity/Antigravity.exe"));
+    let program = std::env::var_os("PROGRAMFILES").map(std::path::PathBuf::from).map(|p| p.join("Antigravity/Antigravity.exe"));
+    let executable = [local, program].into_iter().flatten().find(|p| p.is_file()).ok_or("Antigravity est introuvable. Installe l’application Antigravity.")?;
+    Command::new(executable).arg("--user-data-dir").arg(home).arg("--new-window").spawn().map_err(|_| "Impossible d’ouvrir le profil Antigravity".to_string())?;
+    Ok(())
+}
+
+#[tauri::command]
+fn open_antigravity_profile(app: tauri::AppHandle, profile: String) -> Result<(), String> {
+    #[cfg(windows)] { let home = antigravity_profile(&app, &profile)?; if !home.is_dir() { return Err("Profil Antigravity introuvable.".into()); } open_antigravity(&home) }
+    #[cfg(not(windows))] { let _ = (app, profile); Err("Profil Antigravity disponible uniquement sur Windows.".into()) }
+}
+
+#[tauri::command]
+async fn login_antigravity(app: tauri::AppHandle, profile: String) -> Result<String, String> {
+    let (cancelled, guard) = register_login(&profile)?;
+    tauri::async_runtime::spawn_blocking(move || {
+        let _guard = guard;
+        #[cfg(windows)] {
+            let home = antigravity_profile(&app, &profile)?;
+            std::fs::create_dir_all(&home).map_err(|_| "Impossible de créer le profil Antigravity".to_string())?;
+            open_antigravity(&home)?;
+            let deadline = std::time::Instant::now() + Duration::from_secs(300);
+            while std::time::Instant::now() < deadline {
+                if cancelled.load(Ordering::Relaxed) { return Err("Connexion annulée.".into()); }
+                if let Ok(email) = local_account::email("Antigravity", Some(&home)) { return Ok(email); }
+                std::thread::sleep(Duration::from_secs(2));
+            }
+            Err("Aucun compte détecté dans le profil Antigravity. Connecte-toi dans la fenêtre ouverte puis réessaie.".into())
+        }
+        #[cfg(not(windows))] { let _ = (app, profile, cancelled); Err("Connexion Antigravity disponible uniquement sur Windows.".into()) }
+    }).await.map_err(|_| "Connexion Antigravity interrompue".to_string())?
+}
+
 #[tauri::command]
 async fn login_cursor(app: tauri::AppHandle, profile: String) -> Result<String, String> {
     let (cancelled, guard) = register_login(&profile)?;
@@ -167,6 +238,74 @@ fn profile_home(app: &tauri::AppHandle, profile: Option<&str>) -> Result<Option<
     }
 }
 
+#[derive(serde::Serialize,Debug,PartialEq)]
+struct CodexModel { id:String, name:String, is_default:bool }
+fn parse_codex_models(result:&Value)->Result<(Vec<CodexModel>,Option<String>),String>{
+    let rows=result.get("data").and_then(|v|v.as_array()).filter(|v|v.len()<=200).ok_or("Catalogue Codex illisible.")?;
+    let mut models=Vec::new();for item in rows{
+        let Some(id)=item.get("model").and_then(|v|v.as_str()).filter(|s|!s.is_empty()&&s.len()<=200&&!s.chars().any(char::is_control)) else{continue};
+        let name=item.get("displayName").and_then(|v|v.as_str()).filter(|s|!s.is_empty()&&s.len()<=200&&!s.chars().any(char::is_control)).unwrap_or(id);
+        if item.get("hidden").and_then(|v|v.as_bool())==Some(true){continue}
+        models.push(CodexModel{id:id.into(),name:name.into(),is_default:item.get("isDefault").and_then(|v|v.as_bool()).unwrap_or(false)});
+    }
+    let cursor=match result.get("nextCursor"){None|Some(Value::Null)=>None,Some(Value::String(s)) if !s.is_empty()&&s.len()<=2048&&!s.chars().any(char::is_control)=>Some(s.clone()),_=>return Err("Pagination Codex invalide.".into())};
+    Ok((models,cursor))
+}
+#[tauri::command]
+async fn codex_profile_models(app:tauri::AppHandle,profile:String)->Result<Vec<CodexModel>,String>{
+    if uuid::Uuid::parse_str(&profile).is_err()||profile.len()!=36{return Err("Profil Codex invalide.".into())}
+    let home=profile_home(&app,Some(&profile))?.ok_or("Profil Codex invalide.")?;if !home.is_dir(){return Err("Profil Codex introuvable.".into())}
+    tauri::async_runtime::spawn_blocking(move||{
+        let mut command=Command::new("codex");command.arg("app-server").env("CODEX_HOME",home).args(["-c","cli_auth_credentials_store=\"auto\"","--listen","stdio://"]).stdin(Stdio::piped()).stdout(Stdio::piped()).stderr(Stdio::null());
+        #[cfg(windows)] command.creation_flags(0x08000000);
+        let mut child=command.spawn().map_err(|_|"Impossible de lancer Codex.")?;
+        let result=(||->Result<Vec<CodexModel>,String>{
+            let mut input=child.stdin.take().ok_or("Entrée Codex indisponible.")?;let output=child.stdout.take().ok_or("Sortie Codex indisponible.")?;let(tx,rx)=mpsc::sync_channel::<Value>(32);
+            std::thread::spawn(move||{for line in BufReader::new(output).lines().map_while(Result::ok){if line.len()>2_000_000{break}if let Ok(value)=serde_json::from_str::<Value>(&line){if tx.send(value).is_err(){break}}}});
+            let send=|input:&mut std::process::ChildStdin,value:Value|->Result<(),String>{writeln!(input,"{}",value).map_err(|_|"Communication Codex interrompue.")?;input.flush().map_err(|_|"Communication Codex interrompue.".into())};
+            let deadline=std::time::Instant::now()+Duration::from_secs(20);
+            let receive=|id:u64|->Result<Value,String>{loop{let value=rx.recv_timeout(deadline.saturating_duration_since(std::time::Instant::now())).map_err(|_|"Lecture des modèles Codex expirée.")?;if value.get("id").and_then(|v|v.as_u64())==Some(id){if !value["error"].is_null(){return Err("Codex n’a pas pu lire les modèles.".into())}return Ok(value["result"].clone())}}};
+            send(&mut input,json!({"method":"initialize","id":1,"params":{"clientInfo":{"name":"nivra","title":"Nivra","version":"0.1.0"}}}))?;receive(1)?;send(&mut input,json!({"method":"initialized","params":{}}))?;
+            let mut cursor=None;let mut seen=std::collections::HashSet::new();let mut models=Vec::new();
+            for page in 0..10u64{send(&mut input,json!({"method":"model/list","id":page+2,"params":{"cursor":cursor,"limit":100,"includeHidden":false}}))?;let (entries,next)=parse_codex_models(&receive(page+2)?)?;for item in entries{if seen.insert(item.id.clone()){models.push(item)}}if models.len()>500{return Err("Catalogue Codex trop volumineux.".into())}match next{Some(next) if cursor.as_ref()!=Some(&next)=>cursor=Some(next),Some(_)=>return Err("Pagination Codex répétée.".into()),None=>return Ok(models)}}Err("Catalogue Codex trop volumineux.".into())
+        })();let _=child.kill();let _=child.wait();result
+    }).await.map_err(|_|"Lecture des modèles Codex interrompue.".to_string())?
+}
+
+#[cfg(test)] mod codex_models_tests{
+    use super::*;
+    #[test] fn accepts_visible_catalog_and_bounded_cursor(){let (rows,cursor)=parse_codex_models(&json!({"data":[{"model":"m1","displayName":"Modèle 1","isDefault":true},{"model":"hidden","hidden":true},{"model":"bad\nname"}],"nextCursor":"next"})).unwrap();assert_eq!(rows,vec![CodexModel{id:"m1".into(),name:"Modèle 1".into(),is_default:true}]);assert_eq!(cursor.as_deref(),Some("next"));assert!(parse_codex_models(&json!({"data":[],"nextCursor":"bad\n"})).is_err());assert!(parse_codex_models(&json!({"data":null})).is_err());}
+}
+
+#[cfg(windows)]
+fn codex_profile_command(executable:&std::path::Path,home:&std::path::Path,workspace:&std::path::Path)->Command {
+    let mut command=Command::new(executable);
+    command.args(["-c","cli_auth_credentials_store=\"auto\""]).env("CODEX_HOME",home)
+        .env_remove("OPENAI_API_KEY").env_remove("OPENAI_BASE_URL").current_dir(workspace).creation_flags(0x00000010);
+    command
+}
+
+#[tauri::command]
+fn open_codex_profile(app:tauri::AppHandle,profile:String)->Result<(),String>{
+    #[cfg(windows)] {
+        let home=profile_home(&app,Some(&profile))?.ok_or("Profil invalide.")?;
+        if !home.is_dir(){return Err("Profil Codex introuvable. Reconnecte ce compte.".into())}
+        let workspace=app.path().document_dir().map_err(|_|"Dossier Documents inaccessible.")?;
+        codex_profile_command(&gateway::codex_executable()?,&home,&workspace).spawn().map_err(|_|"Impossible d’ouvrir Codex.".to_string())?;
+        Ok(())
+    }
+    #[cfg(not(windows))] {let _=(app,profile);Err("Ouverture de profil disponible uniquement sur Windows.".into())}
+}
+
+#[cfg(all(test,windows))]
+mod profile_launch_tests {
+    #[test] fn profile_launch_selects_only_the_requested_home(){
+        let command=super::codex_profile_command(std::path::Path::new("C:\\codex.exe"),std::path::Path::new("C:\\profile-a"),std::path::Path::new("C:\\project"));
+        let env:std::collections::HashMap<_,_>=command.get_envs().map(|(k,v)|(k.to_string_lossy().into_owned(),v.map(|x|x.to_string_lossy().into_owned()))).collect();
+        assert_eq!(env["CODEX_HOME"].as_deref(),Some("C:\\profile-a"));assert_eq!(env["OPENAI_API_KEY"],None);assert_eq!(env["OPENAI_BASE_URL"],None);
+    }
+}
+
 fn claude_command(app: &tauri::AppHandle, profile: &str) -> Result<Command, String> {
     if profile.len() != 36 || !profile.chars().all(|c| c.is_ascii_hexdigit() || c == '-') { return Err("Identifiant de compte invalide".into()); }
     let home = app.path().app_data_dir().map_err(|_| "Dossier de l’application inaccessible".to_string())?.join("claude-profiles").join(profile);
@@ -182,6 +321,38 @@ fn claude_command(app: &tauri::AppHandle, profile: &str) -> Result<Command, Stri
         .stdin(Stdio::null()).stderr(Stdio::null());
     #[cfg(windows)] cmd.creation_flags(0x08000000);
     Ok(cmd)
+}
+
+#[cfg(windows)]
+fn claude_profile_launch_command(executable:&std::path::Path,home:&std::path::Path,workspace:&std::path::Path)->Command{
+    let mut command=Command::new(executable);
+    command.env("CLAUDE_CONFIG_DIR",home).env_remove("ANTHROPIC_API_KEY").env_remove("ANTHROPIC_AUTH_TOKEN")
+        .env_remove("CLAUDE_CODE_OAUTH_TOKEN").env_remove("ANTHROPIC_BASE_URL")
+        .env_remove("CLAUDE_CODE_USE_VERTEX").env_remove("CLAUDE_CODE_USE_BEDROCK").env_remove("CLAUDE_CODE_USE_FOUNDRY")
+        .current_dir(workspace).creation_flags(0x00000010);
+    command
+}
+
+#[tauri::command]
+fn open_claude_profile(app:tauri::AppHandle,profile:String)->Result<(),String>{
+    #[cfg(windows)] {
+        if uuid::Uuid::parse_str(&profile).is_err() || profile.len()!=36{return Err("Identifiant de compte invalide.".into())}
+        let home=app.path().app_data_dir().map_err(|_|"Dossier de l’application inaccessible.")?.join("claude-profiles").join(profile);
+        if !home.is_dir(){return Err("Profil Claude introuvable. Reconnecte ce compte.".into())}
+        let workspace=app.path().document_dir().map_err(|_|"Dossier Documents inaccessible.")?;
+        claude_profile_launch_command(&gateway::claude_executable()?,&home,&workspace).spawn().map_err(|_|"Impossible d’ouvrir Claude Code.".to_string())?;
+        Ok(())
+    }
+    #[cfg(not(windows))] {let _=(app,profile);Err("Ouverture de profil disponible uniquement sur Windows.".into())}
+}
+
+#[cfg(all(test,windows))]
+#[test]
+fn claude_profile_launch_isolates_credentials(){
+    let command=claude_profile_launch_command(std::path::Path::new("C:\\claude.exe"),std::path::Path::new("C:\\profile-a"),std::path::Path::new("C:\\project"));
+    let env:std::collections::HashMap<_,_>=command.get_envs().map(|(k,v)|(k.to_string_lossy().into_owned(),v.map(|x|x.to_string_lossy().into_owned()))).collect();
+    assert_eq!(env["CLAUDE_CONFIG_DIR"].as_deref(),Some("C:\\profile-a"));
+    for key in ["ANTHROPIC_API_KEY","ANTHROPIC_AUTH_TOKEN","CLAUDE_CODE_OAUTH_TOKEN","ANTHROPIC_BASE_URL","CLAUDE_CODE_USE_VERTEX","CLAUDE_CODE_USE_BEDROCK","CLAUDE_CODE_USE_FOUNDRY"]{assert_eq!(env[key],None)}
 }
 
 #[tauri::command]
@@ -259,8 +430,6 @@ async fn disconnect_codex(app: tauri::AppHandle, profile: String) -> Result<(), 
 #[tauri::command]
 fn open_usage(service: &str) -> Result<(), String> {
     let url=match service { "Codex"=>"https://chatgpt.com/settings/usage", "Claude Code"=>"https://claude.ai/settings/usage", "Cursor"=>"https://cursor.com/settings", "Antigravity"=>"https://antigravity.google/", _=>return Err("Service inconnu".into()) };
-    let mut cmd=Command::new("explorer.exe"); cmd.arg(url);
-    #[cfg(windows)] cmd.creation_flags(0x08000000);
-    cmd.spawn().map_err(|_| "Impossible d'ouvrir le navigateur".to_string())?; Ok(())
+    browser::open(url)
 }
-fn main(){ tauri::Builder::default().plugin(tauri_plugin_updater::Builder::new().build()).plugin(tauri_plugin_process::init()).invoke_handler(tauri::generate_handler![codex_usage,login_codex,disconnect_codex,claude_account,login_claude,disconnect_claude,existing_service_account,antigravity_usage,login_cursor,open_cursor_profile,cancel_login,open_usage]).run(tauri::generate_context!()).expect("Erreur au lancement de Quota"); }
+fn main(){ tauri::Builder::default().manage(gateway::GatewayManager::default()).plugin(tauri_plugin_updater::Builder::new().build()).plugin(tauri_plugin_process::init()).invoke_handler(tauri::generate_handler![codex_usage,codex_profile_models,login_codex,disconnect_codex,open_codex_profile,claude_account,login_claude,disconnect_claude,open_claude_profile,existing_service_account,antigravity_usage,login_cursor,open_cursor_profile,login_antigravity,open_antigravity_profile,antigravity_cli::antigravity_cli_models,antigravity_cli::antigravity_cli_launch,antigravity_cli::antigravity_cli_login,antigravity_login::antigravity_gateway_login,antigravity_login::antigravity_gateway_cancel,antigravity_login::antigravity_gateway_check,antigravity_login::antigravity_try_model,openrouter_login::openrouter_login,openai_oauth::chatgpt_plan_login,openai_oauth::chatgpt_plan_forget,kimi_login::kimi_login_start,kimi_login::kimi_login_finish,kimi_login::kimi_login_cancel,kimi_login::kimi_usage,nous_login::nous_login_start,nous_login::nous_login_finish,nous_login::nous_login_cancel,qwen_login::qwen_login_start,qwen_login::qwen_login_finish,qwen_login::qwen_login_cancel,kiro_login::kiro_builder_start,kiro_login::kiro_builder_finish,kiro_login::kiro_builder_cancel,kiro_login::kiro_builder_models,kiro_usage::kiro_builder_usage,xai_login::xai_login,xai_login::xai_usage,copilot_login::copilot_login_start,copilot_login::copilot_login_finish,copilot_login::copilot_login_cancel,copilot_login::copilot_usage,cancel_login,open_usage,gateway::gateway_start,gateway::gateway_start_antigravity,gateway::gateway_start_nous,gateway::gateway_add_nous,gateway::gateway_start_qwen,gateway::gateway_add_qwen,gateway::gateway_start_kiro,gateway::gateway_add_kiro,gateway::gateway_start_kimi,gateway::gateway_start_xai,gateway::gateway_start_copilot,gateway::gateway_start_chatgpt,gateway::gateway_stop,gateway::gateway_status,gateway::gateway_models,gateway::gateway_providers,gateway::gateway_openrouter_usage,gateway::gateway_deepseek_balance,gateway::gateway_glm_quota,gateway::gateway_opencode_go_usage,gateway::gateway_cline_usage,gateway::gateway_launch_codex,gateway::gateway_launch_claude,gateway::gateway_add_provider,gateway::gateway_add_antigravity,gateway::gateway_add_kimi,gateway::gateway_add_xai,gateway::gateway_add_copilot,gateway::gateway_add_chatgpt,gateway::gateway_remove_provider,vault::gateway_remember_key,vault::gateway_forget_key]).run(tauri::generate_context!()).expect("Erreur au lancement de Quota"); }

@@ -5,7 +5,7 @@
   "identifier": "fr.quota.desktop",
   "build": {
     "beforeDevCommand": "npm run dev",
-    "devUrl": "http://localhost:1438",
+    "devUrl": "http://127.0.0.1:1438",
     "beforeBuildCommand": "npm run build",
     "frontendDist": "../dist"
   },
