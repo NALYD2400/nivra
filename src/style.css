@@ -216,3 +216,22 @@ html[data-theme="light"] .quota-inspector-surface{background:#fdfaff;border-colo
 @media(prefers-reduced-motion:reduce){.forecast-page,.forecast-page .page-enter,.forecast-page .forecast-mode::before,.forecast-page .forecast-mode button,.forecast-page .forecast-select-trigger,.forecast-page .forecast-select-trigger>svg,.forecast-page .forecast-select-menu,.forecast-selected-name,.quota-series,.quota-tracker,.quota-inspection-points ellipse,.quota-inspector,.quota-inspector-surface{animation:none!important;transition:none!important}.forecast-page .forecast-mode button:active,.forecast-page .forecast-select-trigger:active{transform:none}}
 
 .provider-mark.xai>svg{fill:#fff}html[data-theme="light"] .provider-mark.xai>svg{fill:#000}
+
+.xai-logo{filter:invert(1)}html[data-theme="light"] .xai-logo{filter:none}
+
+
+/* Même fondu global que Sprint, y compris sur les surfaces en dégradé. */
+@keyframes nivra-theme-fade-out{to{opacity:0}}
+@keyframes nivra-theme-fade-in{from{opacity:0}}
+::view-transition-old(root){animation:nivra-theme-fade-out .6s ease-in-out both}
+::view-transition-new(root){animation:nivra-theme-fade-in .6s ease-in-out both}
+::view-transition-group(root){animation-duration:.6s}
+::view-transition{pointer-events:none}
+:root.theme-changing,:root.theme-changing *{transition:background-color .6s ease-in-out,color .6s ease-in-out,border-color .6s ease-in-out,box-shadow .6s ease-in-out!important}
+
+/* Le focus reste visible à la navigation clavier, sans cadre après un clic suivi d'Échap. */
+html[data-focus-input="pointer"] :is(button,a,summary,select,[tabindex]):focus-visible,
+html[data-focus-input="pointer"] .window-controls button:focus-visible,
+html[data-theme="light"][data-focus-input="pointer"] .window-controls button:focus-visible,
+html[data-focus-input="pointer"] .interactive-quota-chart .forecast-plot svg:focus-visible{outline:none}
+html[data-focus-input="pointer"] .select-wrap:focus-within{outline:none}

@@ -1,5 +1,12 @@
 # Historique des versions
 
+## 0.1.2 — 11 novembre 2026
+
+- Transition fluide entre les thèmes clair et sombre.
+- Correction des contours de focus après un clic suivi de la touche Échap, tout en conservant la navigation au clavier.
+- Logo xAI corrigé dans les comptes et les prévisions.
+- Présentation des comptes simplifiée.
+
 ## 0.1.1 — 10 novembre 2026
 
 - Nouvelle page Services : les fournisseurs connectés sont regroupés dans des cartes avec leur abonnement et leur quota.

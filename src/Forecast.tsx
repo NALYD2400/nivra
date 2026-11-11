@@ -1,3 +1,4 @@
+import xaiIcon from './assets/brands/xai.svg';
 import { useEffect, useId, useLayoutEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react';
 import { createPortal } from 'react-dom';
 import { ArrowUpRight, CalendarClock, Check, ChevronDown, Info, LineChart } from 'lucide-react';
@@ -12,7 +13,7 @@ import { estimateUsage, inspectUsage, usagePace, type UsagePoint, type UsageWind
 type Account = ForecastAccount;
 type Props = {accounts:Account[];history:UsagePoint[];icon:string;onOpenAccounts:()=>void};
 
-function AccountLogo({service}:{service:Account['service']}){return <span className="forecast-provider-mark" aria-hidden="true">{service==='Claude Code'?<img src={claudeIcon} alt=""/>:service==='xAI / Grok'?<svg viewBox="0 0 24 24" width="19" height="19" fill="currentColor"><path d="M4 4h4l12 16h-4L4 4Zm14 0h2L6 20H4L18 4Z"/></svg>:service==='Cursor'?<><img className="forecast-logo-dark" src={cursorDark} alt=""/><img className="forecast-logo-light" src={cursorLight} alt=""/></>:<><img className="forecast-logo-dark" src={openaiWhite} alt=""/><img className="forecast-logo-light" src={openaiBlack} alt=""/></>}</span>}
+function AccountLogo({service}:{service:Account['service']}){return <span className="forecast-provider-mark" aria-hidden="true">{service==='Claude Code'?<img src={claudeIcon} alt=""/>:service==='xAI / Grok'?<img className="xai-logo" src={xaiIcon} alt=""/>:service==='Cursor'?<><img className="forecast-logo-dark" src={cursorDark} alt=""/><img className="forecast-logo-light" src={cursorLight} alt=""/></>:<><img className="forecast-logo-dark" src={openaiWhite} alt=""/><img className="forecast-logo-light" src={openaiBlack} alt=""/></>}</span>}
 
 
 function AccountSelect({accounts,current,onSelect}:{accounts:Account[];current:string;onSelect:(id:string)=>void}){

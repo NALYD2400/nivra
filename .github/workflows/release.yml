@@ -62,9 +62,7 @@ jobs:
           tagName: ${{ env.RELEASE_TAG }}
           releaseName: Nivra ${{ env.RELEASE_TAG }}
           releaseBody: |
-            Nouvelle page Services, connexion et quotas Cursor / Grok, comptes réunis et réorganisables, prévisions adaptées aux périodes des services.
-
-            Le suivi de la réserve unifiée Cursor / Grok est hebdomadaire. Les quotas Claude restent indisponibles.
+            Transition fluide entre les thèmes clair et sombre, correction des contours après un clic suivi d'Échap et logo xAI corrigé.
 
             Télécharge Nivra pour Windows avec le programme d’installation ci-dessous. Les installations existantes peuvent utiliser Réglages → Mises à jour.
           releaseDraft: true
