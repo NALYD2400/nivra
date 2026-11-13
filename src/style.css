@@ -235,3 +235,78 @@ html[data-focus-input="pointer"] .window-controls button:focus-visible,
 html[data-theme="light"][data-focus-input="pointer"] .window-controls button:focus-visible,
 html[data-focus-input="pointer"] .interactive-quota-chart .forecast-plot svg:focus-visible{outline:none}
 html[data-focus-input="pointer"] .select-wrap:focus-within{outline:none}
+
+.update-nav-icon{display:block;width:27px;height:27px;object-fit:contain}.update-link{margin-bottom:2px}.update-link .side-link-label{font-weight:600}
+
+.banked-resets{margin:4px 20px 20px;padding:15px;border:1px solid rgba(190,165,222,.2);border-radius:10px;background:rgba(170,135,210,.07);font-size:12px}.banked-resets-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:16px}.banked-resets-heading strong,.banked-resets li strong{font-size:12px}.banked-resets-heading p,.banked-resets-note{margin:5px 0 0;color:#b9adc3;line-height:1.5}.banked-resets-count{white-space:nowrap;font-size:18px;font-weight:650}.banked-resets-count small{font-size:11px;font-weight:400}.banked-resets ul{list-style:none;margin:12px 0 0;padding:0}.banked-resets li{display:flex;justify-content:space-between;gap:14px;padding:9px 0;border-top:1px solid rgba(190,165,222,.18)}.banked-resets li div{display:grid;gap:4px}.banked-resets li div:last-child{text-align:right;color:#b9adc3}.banked-resets-link{margin-top:10px}html[data-theme="light"] .banked-resets{background:rgba(159,119,210,.07);border-color:rgba(108,78,148,.15)}html[data-theme="light"] .banked-resets-heading p,html[data-theme="light"] .banked-resets-note,html[data-theme="light"] .banked-resets li div:last-child{color:#6e6078}@media(max-width:700px){.banked-resets{margin-left:14px;margin-right:14px}.banked-resets li{flex-direction:column}.banked-resets li div:last-child{text-align:left}}
+
+/* Réinitialisations offertes : accès compact et détails dans Nivra. */
+.banked-resets-compact{display:flex;align-items:center;gap:11px;margin:2px 20px 20px;padding:12px 14px;border:1px solid rgba(201,178,240,.17);border-radius:11px;background:linear-gradient(110deg,rgba(172,139,221,.10),rgba(172,139,221,.035))}.banked-reset-icon,.reset-dialog-icon,.reset-list-icon{display:grid;place-items:center;flex:none;color:#d3b8ff;background:rgba(172,130,231,.15);border:1px solid rgba(201,178,240,.14)}.banked-reset-icon{width:36px;height:36px;border-radius:10px}.banked-reset-summary{display:grid;gap:4px;min-width:0}.banked-reset-summary strong{font-size:11px}.banked-reset-summary span{font-size:11px;color:#b8a9c9}.banked-reset-details{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:40px;margin-left:auto;padding:0 12px;border:1px solid rgba(205,179,247,.24);border-radius:8px;background:rgba(184,152,230,.1);color:#e3d3ff;font-size:11px;white-space:nowrap}.banked-reset-details:hover{background:rgba(184,152,230,.2)}
+.reset-dialog{width:min(560px,calc(100vw - 36px));max-height:calc(100vh - 36px);overflow:auto;margin:auto;padding:24px;border:1px solid #4c405b;border-radius:18px;background:#201a2a;color:#f3edf8;box-shadow:0 24px 80px #090610aa;font:inherit}.reset-dialog::backdrop{background:rgba(8,6,12,.76)}.reset-dialog-head{display:flex;align-items:center;gap:13px}.reset-dialog-icon{width:46px;height:46px;border-radius:13px}.reset-dialog-head h2{font-size:17px;letter-spacing:-.02em}.reset-dialog-head p{margin-top:5px;color:#bcaec8;font-size:11px;overflow-wrap:anywhere}.reset-dialog-close{margin-left:auto;align-self:flex-start}.reset-dialog-intro{margin:20px 0 16px;color:#c1b3cb;font-size:12px;line-height:1.55}.reset-dialog-total{display:flex;align-items:center;justify-content:space-between;padding:13px 15px;border:1px solid rgba(207,183,241,.18);border-radius:10px;background:rgba(188,150,231,.09);font-size:12px}.reset-dialog-total strong{color:#e2d1ff;font-size:19px}.reset-dialog-list{list-style:none;margin:10px 0 0;padding:0}.reset-dialog-list li{display:flex;align-items:center;gap:11px;padding:14px 2px;border-bottom:1px solid rgba(206,185,229,.13)}.reset-list-icon{width:34px;height:34px;border-radius:9px}.reset-list-copy{display:grid;gap:5px;flex:1;min-width:0}.reset-list-copy strong,.reset-expiration strong{font-size:11px;font-weight:600}.reset-list-copy p,.reset-list-copy span,.reset-expiration span{font-size:11px;color:#bcaec8;line-height:1.4}.reset-expiration{display:grid;gap:5px;text-align:right}.reset-dialog-empty{padding:20px 2px;color:#c1b3cb;font-size:12px;line-height:1.5}.reset-dialog-footer{display:flex;align-items:center;justify-content:space-between;gap:14px;margin-top:18px}.reset-dialog-footer>span{display:flex;align-items:center;gap:6px;color:#a99bb6;font-size:11px}.reset-dialog-footer .button{min-height:40px}
+html[data-theme="light"] .banked-resets-compact{background:rgba(159,119,210,.07);border-color:rgba(108,78,148,.16)}html[data-theme="light"] .banked-reset-summary span{color:#706079}html[data-theme="light"] .banked-reset-details{color:#60417d;background:rgba(145,105,190,.09);border-color:rgba(108,78,148,.2)}html[data-theme="light"] .banked-reset-icon,html[data-theme="light"] .reset-dialog-icon,html[data-theme="light"] .reset-list-icon{color:#7650a4;background:rgba(145,105,190,.12);border-color:rgba(108,78,148,.12)}html[data-theme="light"] .reset-dialog{background:#fbf8ff;color:#33263d;border-color:#d6c6e5;box-shadow:0 24px 80px #26173155}html[data-theme="light"] .reset-dialog-head p,html[data-theme="light"] .reset-dialog-intro,html[data-theme="light"] .reset-list-copy p,html[data-theme="light"] .reset-list-copy span,html[data-theme="light"] .reset-expiration span,html[data-theme="light"] .reset-dialog-empty,html[data-theme="light"] .reset-dialog-footer>span{color:#75657f}html[data-theme="light"] .reset-dialog-total{background:rgba(145,105,190,.08);border-color:rgba(108,78,148,.14)}html[data-theme="light"] .reset-dialog-total strong{color:#704d99}html[data-theme="light"] .reset-dialog-list li{border-color:#e8deef}@media(max-width:700px){.banked-resets-compact{margin-left:14px;margin-right:14px}.reset-dialog-list li{align-items:flex-start;flex-wrap:wrap}.reset-expiration{padding-left:45px;text-align:left}}
+
+/* Bouton discret dans les actions du compte. */
+.banked-reset-action{position:relative;flex:none}.banked-reset-button{position:relative;display:grid;place-items:center;width:38px;height:38px;padding:5px;border:0;border-radius:9px;background:transparent}.banked-reset-button:hover{background:rgba(194,164,238,.14)}.banked-reset-button img{display:block;width:29px;height:29px;object-fit:contain}.banked-reset-badge{position:absolute;right:0;bottom:0;min-width:15px;height:15px;padding:0 3px;border:1px solid #332740;border-radius:8px;background:#8261b7;color:white;text-align:center;font-size:9px;line-height:13px;font-weight:700}.banked-reset-alert{position:absolute;top:0;right:0;width:13px;height:13px;border:1px solid #332740;border-radius:50%;background:#f2a857;color:#332114;text-align:center;font-size:10px;line-height:11px;font-weight:800}.reset-expiry-notice{display:flex;align-items:center;gap:8px;margin:12px 0 0;padding:10px 12px;border:1px solid rgba(239,172,91,.25);border-radius:9px;background:rgba(239,172,91,.1);color:#ffd196;font-size:11px;line-height:1.4}.reset-expiry-notice svg{flex:none}.reset-expiration.is-soon span{color:#ffc782}.reset-expiration.is-soon strong{color:#ffe0b9}html[data-theme="light"] .banked-reset-button:hover{background:rgba(145,105,190,.12)}html[data-theme="light"] .reset-expiry-notice{background:#fff3df;border-color:#efd1a3;color:#805216}html[data-theme="light"] .reset-expiration.is-soon span,html[data-theme="light"] .reset-expiration.is-soon strong{color:#805216}
+
+.banked-reset-art{width:29px;height:29px;display:grid;place-items:center;overflow:hidden;pointer-events:none}.banked-reset-art img{width:72px;height:48px;max-width:none;object-fit:contain}
+
+/* Centrer l’illustration dans le cadre de l’icône. */
+.banked-reset-art{position:relative;display:block}.banked-reset-art img{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%)}
+
+/* Fenêtre des réinitialisations : les illustrations reprennent celles de Nivra. */
+.reset-dialog{width:min(570px,calc(100vw - 36px));padding:26px;border-color:#51415f;background:#1d1827;box-shadow:0 24px 80px #090610b0}.reset-dialog-head{gap:14px}.reset-dialog-icon,.reset-list-icon{border:0;background:transparent}.reset-dialog-icon{width:48px;height:48px}.reset-dialog-icon .banked-reset-art{width:48px;height:48px}.reset-dialog-icon .banked-reset-art img{width:116px;height:auto}.reset-dialog-head h2{font-size:17px;line-height:1.25}.reset-dialog-head p{margin-top:5px;color:#b8aac4}.reset-dialog-intro{margin:22px 0 15px;max-width:460px;line-height:1.6}.reset-dialog-total{min-height:64px;padding:12px 16px;background:rgba(185,146,228,.09);border-color:rgba(206,182,238,.16)}.reset-dialog-total>div{display:flex;align-items:baseline;gap:9px}.reset-dialog-total strong{font-size:22px;line-height:1;color:#e6d7ff}.reset-dialog-total>div>span{font-size:12px;font-weight:600;color:#eee7f5}.reset-total-hint{font-size:11px;color:#b9abc5}.reset-dialog-list{margin-top:12px}.reset-dialog-list li{gap:12px;padding:16px 0;align-items:center}.reset-list-icon{width:38px;height:38px}.reset-list-icon .banked-reset-art{width:38px;height:38px}.reset-list-icon .banked-reset-art img{width:90px;height:auto}.reset-list-copy{gap:5px}.reset-list-copy strong{font-size:12px;line-height:1.4;color:#f0eaf6}.reset-list-copy p,.reset-list-copy span,.reset-expiration span{font-size:11px;line-height:1.45;color:#baacc7}.reset-expiration{gap:5px;min-width:115px}.reset-expiration strong{font-size:11px;color:#f1eaf7;white-space:nowrap}.reset-dialog-footer{margin-top:20px}.reset-dialog-footer>span{color:#b9abc5}.reset-dialog-close{width:40px;height:40px}.reset-dialog-empty{padding:20px 4px}
+html[data-theme="light"] .reset-dialog-icon,html[data-theme="light"] .reset-list-icon{background:transparent;border:0}html[data-theme="light"] .reset-dialog-total>div>span,html[data-theme="light"] .reset-list-copy strong,html[data-theme="light"] .reset-expiration strong{color:#42314d}html[data-theme="light"] .reset-total-hint,html[data-theme="light"] .reset-dialog-footer>span{color:#75657f}html[data-theme="light"] .reset-expiration.is-soon strong{color:#805216}
+@media(max-width:700px){.reset-dialog{padding:20px}.reset-dialog-list li{flex-wrap:nowrap;align-items:center}.reset-expiration{min-width:0;padding-left:0;text-align:right}.reset-list-copy strong{overflow-wrap:anywhere}}
+@media(max-width:520px){.reset-dialog-list li{display:grid;grid-template-columns:38px minmax(0,1fr)}.reset-expiration{grid-column:2;text-align:left}.reset-expiration strong{white-space:normal}.reset-total-hint{display:none}}
+
+/* Apparition de la fenêtre des réinitialisations. */
+@media (prefers-reduced-motion: no-preference) {
+  .reset-dialog[open] { animation: reset-dialog-enter 220ms cubic-bezier(.2, 0, 0, 1) both; }
+  .reset-dialog[open]::backdrop { animation: reset-backdrop-enter 180ms ease-out both; }
+  @keyframes reset-dialog-enter {
+    from { opacity: 0; transform: translateY(10px) scale(.98); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+  }
+  @keyframes reset-backdrop-enter {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+}
+/* Même verre que les cartes de Nivra, avec un compteur compact. */
+.reset-dialog {
+  background: radial-gradient(ellipse at 8% 0%, rgba(153,117,221,.12), transparent 48%), linear-gradient(130deg, rgba(26,22,35,.88), rgba(17,16,23,.86));
+  border-color: rgba(223,207,255,.18);
+  backdrop-filter: blur(24px) saturate(115%);
+  -webkit-backdrop-filter: blur(24px) saturate(115%);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.055), 0 24px 80px rgba(9,6,16,.65);
+}
+.reset-dialog::backdrop { background: rgba(8,6,12,.55); }
+.reset-dialog-intro { margin-bottom: 12px; }
+.reset-dialog-total {
+  display: inline-flex;
+  width: fit-content;
+  min-height: 0;
+  padding: 5px 10px;
+  border-radius: 999px;
+  background: rgba(185,146,228,.1);
+  border-color: rgba(206,182,238,.18);
+}
+.reset-dialog-total > div { align-items: center; gap: 6px; }
+.reset-dialog-total strong { font-size: 12px; line-height: 1.3; }
+.reset-dialog-total > div > span { font-size: 11px; font-weight: 500; }
+.reset-dialog-list { margin-top: 8px; }
+html[data-theme="light"] .reset-dialog {
+  background: radial-gradient(ellipse at 8% 0%, rgba(178,145,218,.16), transparent 48%), linear-gradient(130deg, rgba(255,252,255,.92), rgba(245,239,250,.88));
+  border-color: rgba(108,78,148,.2);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.7), 0 24px 80px rgba(38,23,49,.3);
+}
+html[data-theme="light"] .reset-dialog::backdrop { background: rgba(29,20,38,.3); }
+/* Réinitialisations rattachées au compte plutôt qu'aux actions de gestion. */
+.account-subline { display: flex; align-items: center; flex-wrap: wrap; gap: 0 9px; margin-top: 5px; }
+.account-subline > p { margin: 0; }
+.account-subline .banked-reset-button { display: inline-flex; gap: 4px; width: auto; min-height: 0; height: 18px; padding: 0 3px; color: #c9b4ed; font-size: 11px; }
+.account-subline .banked-reset-button .banked-reset-art { width: 18px; height: 18px; }
+.account-subline .banked-reset-button .banked-reset-art img { width: 44px; height: auto; }
+.account-subline .banked-reset-label { white-space: nowrap; }
+.account-subline .banked-reset-alert { top: 2px; right: -5px; }
+html[data-theme="light"] .account-subline .banked-reset-button { color: #654482; }

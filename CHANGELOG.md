@@ -1,5 +1,12 @@
 # Historique des versions
 
+## 0.1.3 — 13 novembre 2026
+
+- Affichage des réinitialisations Codex offertes et de leur expiration.
+- Fenêtre détaillée translucide, avec ouverture animée et fermeture par la croix ou un clic extérieur.
+- Chargement et icônes de l’interface actualisés ; accès aux mises à jour depuis le menu.
+- Lecture des comptes Cursor et Codex améliorée.
+
 ## 0.1.2 — 11 novembre 2026
 
 - Transition fluide entre les thèmes clair et sombre.

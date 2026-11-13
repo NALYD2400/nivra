@@ -5,6 +5,8 @@ import * as React from "react"
 import { useEffect, useRef } from "react"
 
 const MAX_DPR = 2
+const FRAME_INTERVAL = 1000 / 60
+const IDLE_FRAME_INTERVAL = 1000 / 30
 const NAME = "RibbonGlow"
 
 // Field shape, frozen (rule 11b): the "Glacier" composition from the preview.
@@ -268,23 +270,37 @@ function fieldTarget(gl: WebGL2RenderingContext) {
 // offsetWidth ratio undoes the Framer canvas zoom that the rect carries.
 function trackPointer(root: HTMLElement) {
     const p = { tx: 0, ty: 0, inside: false, seen: false }
+    let clientX = 0
+    let clientY = 0
+    let dirty = false
+    let lastInteraction = -Infinity
     const read = (e: PointerEvent) => {
+        clientX = e.clientX
+        clientY = e.clientY
+        dirty = true
+        lastInteraction = performance.now()
+    }
+    const update = () => {
+        if (!dirty) return
+        dirty = false
         const r = root.getBoundingClientRect()
         const sx = root.offsetWidth / (r.width || 1)
         const sy = root.offsetHeight / (r.height || 1)
-        p.tx = (e.clientX - r.left) * sx
-        p.ty = (e.clientY - r.top) * sy
-        p.inside = e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom
+        p.tx = (clientX - r.left) * sx
+        p.ty = (clientY - r.top) * sy
+        p.inside = clientX >= r.left && clientX <= r.right && clientY >= r.top && clientY <= r.bottom
         p.seen = true
     }
     const out = (e: PointerEvent) => {
-        if (!e.relatedTarget) p.inside = false
+        if (!e.relatedTarget) { dirty = false; p.inside = false }
     }
     window.addEventListener("pointermove", read, { passive: true })
     window.addEventListener("pointerdown", read, { passive: true })
     document.addEventListener("pointerout", out)
     return {
         p,
+        update,
+        isActive: (now: number) => now - lastInteraction < 2000,
         dispose() {
             window.removeEventListener("pointermove", read)
             window.removeEventListener("pointerdown", read)
@@ -373,10 +389,16 @@ export default function RibbonGlow(props: RibbonGlowProps) {
         let on = 0
         let raf = 0
         let last = -1
+        let nextFrame = 0
         let clock = 0
 
         const render = (now: number) => {
             raf = requestAnimationFrame(render)
+            if (!nextFrame) nextFrame = now
+            if (now + 0.5 < nextFrame) return
+            const interval = pointer.isActive(now) ? FRAME_INTERVAL : IDLE_FRAME_INTERVAL
+            nextFrame = Math.max(nextFrame + interval, now)
+            pointer.update()
             const dt = last < 0 ? 0 : clampN((now - last) / 1000, 0, 0.05)
             last = now
             const v = vRef.current

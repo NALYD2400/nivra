@@ -1,6 +1,6 @@
 import type {ReactNode} from 'react';
 import {ArrowRight,Link2,Plus} from 'lucide-react';
-import servicesIcon from './assets/summary-services.png';
+import servicesIcon from './assets/summary-services-ui.png';
 import './services.css';
 
 type Service='Codex'|'Claude Code'|'Cursor'|'xAI / Grok';

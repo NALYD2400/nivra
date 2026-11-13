@@ -62,7 +62,7 @@ jobs:
           tagName: ${{ env.RELEASE_TAG }}
           releaseName: Nivra ${{ env.RELEASE_TAG }}
           releaseBody: |
-            Transition fluide entre les thèmes clair et sombre, correction des contours après un clic suivi d'Échap et logo xAI corrigé.
+            Réinitialisations Codex offertes, fenêtre de détails repensée, icônes actualisées et lecture des comptes améliorée.
 
             Télécharge Nivra pour Windows avec le programme d’installation ci-dessous. Les installations existantes peuvent utiliser Réglages → Mises à jour.
           releaseDraft: true

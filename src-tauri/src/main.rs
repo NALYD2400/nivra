@@ -20,11 +20,43 @@ fn cancel_login(profile: String) {
     if let Ok(tasks) = LOGIN_TASKS.get_or_init(Default::default).lock() { if let Some(flag) = tasks.get(&profile) { flag.store(true, Ordering::Relaxed); } }
 }
 
+// Prefer the Codex desktop app server when its resources directory is on PATH.
+// It supports reset-credit details while older standalone CLIs may omit them.
+fn codex_usage_executable() -> std::path::PathBuf {
+    static EXECUTABLE: OnceLock<std::path::PathBuf> = OnceLock::new();
+    EXECUTABLE.get_or_init(|| {
+        if let Some(path) = std::env::var_os("PATH") {
+            for dir in std::env::split_paths(&path) {
+                let text = dir.to_string_lossy().to_ascii_lowercase();
+                if text.contains("windowsapps") && text.contains("openai.codex_") && text.ends_with("app\\resources") {
+                    let candidate = dir.join("codex.exe");
+                    if candidate.is_file() { return candidate; }
+                }
+            }
+        }
+        // A normal Windows launch need not inherit the desktop app's PATH.
+        #[cfg(windows)]
+        {
+            let output = Command::new("powershell.exe")
+                .args(["-NoProfile", "-NonInteractive", "-Command", "(Get-AppxPackage -Name OpenAI.Codex -ErrorAction SilentlyContinue | Select-Object -First 1 -ExpandProperty InstallLocation)"])
+                .creation_flags(0x08000000).output();
+            if let Ok(output) = output {
+                if output.status.success() {
+                    let root = String::from_utf8_lossy(&output.stdout);
+                    let candidate = std::path::Path::new(root.trim()).join("app").join("resources").join("codex.exe");
+                    if candidate.is_file() { return candidate; }
+                }
+            }
+        }
+        "codex".into()
+    }).clone()
+}
+
 #[tauri::command]
 async fn codex_usage(app: tauri::AppHandle, profile: Option<String>) -> Result<Value, String> {
     let home = profile_home(&app, profile.as_deref())?;
     tauri::async_runtime::spawn_blocking(move || {
-        let mut command = Command::new("codex");
+        let mut command = Command::new(codex_usage_executable());
         command.arg("app-server");
         if let Some(home) = home { command.env("CODEX_HOME", home).args(["-c", "cli_auth_credentials_store=\"auto\""]); }
         command.args(["--listen", "stdio://"]).stdin(Stdio::piped()).stdout(Stdio::piped()).stderr(Stdio::null());

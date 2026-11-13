@@ -20,7 +20,10 @@ fn account_window(app: &tauri::AppHandle, visible: bool) -> Result<WebviewWindow
         return Ok(window);
     }
     let directory = app.path().app_data_dir().map_err(|_| "Profil de connexion inaccessible.")?.join("cursor-web-session");
-    WebviewWindowBuilder::new(app, WINDOW, WebviewUrl::External(DASHBOARD.parse().unwrap()))
+    // Reading the persistent cookie store does not require loading the full dashboard.
+    // The official page is still opened when the user starts an interactive login.
+    let initial_url = if visible { DASHBOARD } else { "about:blank" };
+    WebviewWindowBuilder::new(app, WINDOW, WebviewUrl::External(initial_url.parse().unwrap()))
         .title("Connexion Cursor / xAI — Nivra")
         .inner_size(920.0, 760.0).min_inner_size(600.0, 500.0)
         .visible(visible).data_directory(directory)
@@ -117,14 +120,21 @@ fn fetch_cookie(client: &reqwest::blocking::Client, base: &str, cookie: &str) ->
 #[tauri::command]
 pub async fn cursor_usage(app: tauri::AppHandle) -> Result<Value, String> {
     tauri::async_runtime::spawn_blocking(move || {
+        // Do not close the temporary reader while an interactive login is using it.
+        let _lock = CONNECTING.get_or_init(Default::default).try_lock().map_err(|_| "Une connexion est déjà en cours. Réessaie dans un instant.")?;
         let window = account_window(&app, false)?;
-        // WebView2 loads the persistent cookie store asynchronously on creation.
-        let deadline = Instant::now() + Duration::from_secs(4);
-        let cookie = loop {
-            if let Some(cookie) = window_cookie(&window)? { break cookie; }
-            if Instant::now() >= deadline { return Err("Connecte ton compte dans Nivra pour consulter ton quota.".into()); }
-            std::thread::sleep(Duration::from_millis(200));
-        };
+        let result = (|| {
+            // WebView2 loads the persistent cookie store asynchronously on creation.
+            let deadline = Instant::now() + Duration::from_secs(4);
+            loop {
+                if let Some(cookie) = window_cookie(&window)? { return Ok(cookie); }
+                if Instant::now() >= deadline { return Err("Connecte ton compte dans Nivra pour consulter ton quota.".to_string()); }
+                std::thread::sleep(Duration::from_millis(200));
+            }
+        })();
+        // The protected profile stays on disk; only the temporary reader is closed.
+        let _ = window.close();
+        let cookie = result?;
         fetch_cookie(&client()?, ORIGIN, &cookie)
     }).await.map_err(|_| "Lecture du quota interrompue.".to_string())?
 }
