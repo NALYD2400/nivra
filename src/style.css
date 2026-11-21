@@ -310,3 +310,44 @@ html[data-theme="light"] .reset-dialog::backdrop { background: rgba(29,20,38,.3)
 .account-subline .banked-reset-label { white-space: nowrap; }
 .account-subline .banked-reset-alert { top: 2px; right: -5px; }
 html[data-theme="light"] .account-subline .banked-reset-button { color: #654482; }
+/* Détails de l’abonnement dans la même surface que les réinitialisations. */
+.account-info-dialog{width:min(480px,calc(100vw - 36px))}
+.account-info-head{display:flex;align-items:flex-start;justify-content:space-between;gap:14px}
+.account-info-head h2{font-size:17px;line-height:1.3}
+.account-info-head p{margin-top:5px;color:#b8aac4;font-size:11px;overflow-wrap:anywhere}
+.account-info-list{display:grid;gap:0;margin:22px 0 14px}
+.account-info-list>div{display:flex;justify-content:space-between;gap:20px;padding:11px 0;border-bottom:1px solid rgba(206,185,229,.14)}
+.account-info-list dt{color:#baacc7;font-size:12px}
+.account-info-list dd{margin:0;color:#f0eaf6;font-size:12px;font-weight:600;text-align:right;overflow-wrap:anywhere}
+.account-info-note{color:#bcaec8;font-size:11px;line-height:1.6}
+.account-info-link{margin-top:18px}
+html[data-theme="light"] .account-info-head p,html[data-theme="light"] .account-info-list dt,html[data-theme="light"] .account-info-note{color:#75657f}
+html[data-theme="light"] .account-info-list dd{color:#42314d}
+html[data-theme="light"] .account-info-list>div{border-color:#e8deef}
+/* Bouton de navigation vers le service associé au compte. */
+.account-info-dialog .account-info-link {
+  min-height: 40px;
+  padding: 0 15px;
+  gap: 9px;
+  border: 1px solid rgba(195,163,244,.32);
+  border-radius: 10px;
+  color: #eee5ff;
+  background: linear-gradient(135deg, rgba(143,102,206,.25), rgba(88,60,135,.18));
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.08), 0 4px 14px rgba(8,5,16,.15);
+  transition: background-color .18s ease, border-color .18s ease, box-shadow .18s ease, transform .16s ease;
+}
+.account-info-dialog .account-info-link svg { color: #c8abf4; transition: transform .18s ease; }
+.account-info-dialog .account-info-link:hover { border-color: rgba(209,183,250,.58); background-color: rgba(162,118,221,.13); box-shadow: inset 0 1px 0 rgba(255,255,255,.12), 0 5px 18px rgba(49,24,85,.28); }
+.account-info-dialog .account-info-link:hover svg { transform: translate(2px,-2px); }
+html[data-theme="light"] .account-info-dialog .account-info-link { color: #4e326c; border-color: rgba(118,78,166,.3); background: linear-gradient(135deg, rgba(178,140,224,.22), rgba(226,210,245,.5)); box-shadow: inset 0 1px 0 rgba(255,255,255,.8), 0 4px 14px rgba(74,42,105,.1); }
+html[data-theme="light"] .account-info-dialog .account-info-link svg { color: #76509d; }
+@media (prefers-reduced-motion: reduce) { .account-info-dialog .account-info-link svg { transition: none; } .account-info-dialog .account-info-link:hover svg { transform: none; } }
+
+.account-removal-dialog{width:min(430px,calc(100vw - 36px))}
+.account-removal-dialog h2{font-size:18px;line-height:1.35}
+.account-removal-name{margin-top:12px;font-size:13px;font-weight:650;overflow-wrap:anywhere}
+.account-removal-detail{margin-top:5px;color:#c8bcd2;font-size:12px;line-height:1.55}
+.account-removal-actions{display:flex;justify-content:flex-end;flex-wrap:wrap;gap:8px;margin-top:22px}
+.account-removal-confirm{background:#8b3e51;border-color:#b77081;color:#fff}
+.account-removal-confirm:hover{background:#a2485e}
+html[data-theme="light"] .account-removal-detail{color:#63536e}

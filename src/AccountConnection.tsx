@@ -1,4 +1,4 @@
-import { useEffect, useRef, type ReactNode } from 'react';
+import { useLayoutEffect, useRef, type ReactNode } from 'react';
 import { ArrowUpRight, Check, CircleAlert, X } from 'lucide-react';
 import './account-connection.css';
 import { ConnectionIcon } from './ConnectionIcons';
@@ -18,23 +18,19 @@ const content = {
 };
 
 export function AccountConnection({service,busy,error,onService,onClose,onConnect,renderBrand}:Props){
- const dialog=useRef<HTMLDivElement>(null);
- const close=useRef<HTMLButtonElement>(null);
+ const dialog=useRef<HTMLDialogElement>(null);
  const info=content[service];
- useEffect(()=>{
-  const previous=document.activeElement instanceof HTMLElement?document.activeElement:null;
-  close.current?.focus();
-  return()=>{if(previous?.isConnected)previous.focus()};
+ useLayoutEffect(()=>{
+  const element=dialog.current;
+  element?.showModal();
+  return()=>{if(element?.open)element.close()};
  },[]);
- return <div className="overlay connection-overlay" onMouseDown={event=>{if(event.target===event.currentTarget)onClose()}}>
-  <div ref={dialog} className="connection-dialog" role="dialog" aria-modal="true" aria-labelledby="connection-title" aria-describedby="connection-subtitle" onKeyDown={event=>{
-   if(event.key!=='Tab')return;
-   const items=Array.from(dialog.current?.querySelectorAll<HTMLElement>('button:not(:disabled), a[href], summary')??[]);
-   const first=items[0],last=items[items.length-1];
-   if(event.shiftKey&&document.activeElement===first){event.preventDefault();last?.focus()}
-   else if(!event.shiftKey&&document.activeElement===last){event.preventDefault();first?.focus()}
+ return <dialog ref={dialog} className="connection-dialog" aria-labelledby="connection-title" aria-describedby="connection-subtitle" onCancel={event=>{event.preventDefault();onClose()}} onPointerDown={event=>{
+   if(event.target!==event.currentTarget)return;
+   const rect=event.currentTarget.getBoundingClientRect();
+   if(event.clientX<rect.left||event.clientX>rect.right||event.clientY<rect.top||event.clientY>rect.bottom)onClose();
   }}>
-   <header className="connection-header"><div><h2 id="connection-title">Ajouter un compte</h2><p id="connection-subtitle">Choisis le service à retrouver dans Nivra.</p></div><button ref={close} type="button" className="icon-button" aria-label="Fermer la connexion" onClick={onClose}><X size={19}/></button></header>
+   <header className="connection-header"><div><h2 id="connection-title">Ajouter un compte</h2><p id="connection-subtitle">Choisis le service à retrouver dans Nivra.</p></div><button type="button" className="icon-button" aria-label="Fermer la connexion" onClick={onClose}><X size={19}/></button></header>
    <div className="connection-services" role="group" aria-label="Service à connecter">{services.map(item=><button key={item} type="button" aria-pressed={service===item} disabled={busy} onClick={()=>onService(item)}>{renderBrand(item)}<span>{content[item].name}</span>{service===item&&<Check size={15} className="connection-check"/>}</button>)}</div>
    <section key={service} className="connection-body" aria-label={info.name} aria-busy={busy}>
     <h3>{info.title}</h3>{!busy&&<p className="connection-description">{info.description}</p>}
@@ -44,6 +40,5 @@ export function AccountConnection({service,busy,error,onService,onClose,onConnec
     {error&&<div className="connection-error" role="alert"><CircleAlert size={17}/><div><strong>La connexion n’a pas abouti</strong><p>{error}</p></div></div>}
    </section>
    <footer className="connection-footer"><button type="button" className="button connection-cancel" onClick={onClose}>{busy?'Annuler la connexion':'Fermer'}</button><button type="button" className="button primary connection-submit" disabled={busy} onClick={onConnect}>{busy?<><ConnectionIcon kind="loading" size={16} className="spin"/> En attente…</>:<>{error?'Réessayer':info.action}<ArrowUpRight size={16}/></>}</button></footer>
-  </div>
- </div>;
+ </dialog>;
 }

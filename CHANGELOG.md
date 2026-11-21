@@ -1,5 +1,11 @@
 # Historique des versions
 
+## 0.1.4 — 21 novembre 2026
+
+- Ajout d’une date de fin d’abonnement et d’une note personnelle dans les informations du compte. Les deux champs sont facultatifs et enregistrés sur l’appareil.
+- Repère pour les échéances des deux prochaines semaines et les dates dépassées. La fin du cycle de facturation reste affichée séparément lorsqu’elle est communiquée.
+- Actualisation des écrans de connexion, de confirmation, de personnalisation et de mises à jour.
+
 ## 0.1.3 — 13 novembre 2026
 
 - Affichage des réinitialisations Codex offertes et de leur expiration.

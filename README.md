@@ -14,6 +14,7 @@ Installer Node.js, Rust et les prérequis Windows de Tauri, puis lancer `npm ci`
 
 ## Comptes et limites
 
+- **Informations du compte** : ouvre l’icône d’information d’un compte pour renseigner une date de fin d’abonnement ou une note personnelle. Chaque compte conserve ses informations sur cet appareil. Nivra signale les échéances proches ou passées et affiche séparément la fin du cycle de facturation lorsqu’elle est communiquée.
 - **Codex** : plusieurs comptes peuvent être connectés avec des profils séparés. Les quotas fournis par Codex sont actualisés périodiquement.
 - **Claude Code** : une connexion via un profil séparé est proposée ; l’affichage des quotas n’est pas encore disponible.
 - **Ordre des comptes** : les cartes Codex, Claude et Cursor/Grok de « Mes comptes » se déplacent avec la même poignée, à la souris ou avec les flèches haut/bas. L’ordre est conservé après redémarrage, sans ajouter de faux profil Cursor aux comptes Codex.

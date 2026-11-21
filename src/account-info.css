@@ -1,0 +1,109 @@
+.account-info-dialog {
+  max-height: calc(100dvh - 32px);
+  overflow: auto;
+}
+
+.account-info-dialog .account-info-link {
+  margin: 0;
+}
+
+.account-info-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.account-info-actions-main {
+  justify-content: space-between;
+  margin-top: 18px;
+}
+
+.account-info-source {
+  display: block;
+  margin-top: 4px;
+  font-size: 11px;
+  font-weight: 400;
+  opacity: .8;
+}
+
+.account-info-deadline {
+  display: inline-block;
+  padding: 3px 7px;
+  margin-top: 5px;
+  border-radius: 6px;
+  background: var(--accent-soft);
+  color: var(--accent-muted);
+  font-size: 11px;
+}
+
+.account-info-personal-note {
+  padding: 11px 12px;
+  border: 1px solid rgba(206, 185, 229, .18);
+  border-radius: 9px;
+}
+
+.account-info-personal-note h3 {
+  font-size: 12px;
+  margin-bottom: 5px;
+}
+
+.account-info-personal-note p {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.account-info-form {
+  display: grid;
+  gap: 12px;
+}
+
+.account-info-form label {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.account-info-form label span {
+  font-weight: 400;
+  opacity: .8;
+}
+
+.account-info-form input,
+.account-info-form textarea {
+  display: block;
+  width: 100%;
+  margin-top: 5px;
+  padding: 9px 10px;
+  border: 1px solid rgba(206, 185, 229, .28);
+  border-radius: 8px;
+  background: rgba(12, 9, 19, .34);
+  color: inherit;
+  color-scheme: dark;
+  font: inherit;
+  font-weight: 400;
+}
+
+.account-info-form textarea {
+  resize: vertical;
+  min-height: 64px;
+}
+
+.account-info-form textarea::placeholder {
+  color: inherit;
+  opacity: .68;
+}
+
+.account-info-form :is(input, textarea):focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+html[data-theme="light"] .account-info-form :is(input, textarea),
+html[data-theme="light"] .account-info-personal-note {
+  border-color: #d9cce3;
+  background: rgba(255, 255, 255, .6);
+  color-scheme: light;
+}

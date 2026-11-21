@@ -95,7 +95,7 @@ fn parse(summary:&Value,sand:Option<&Value>,email:&str,id:&str)->Value{
   }
   if let Some(sand)=sand{if sand.get("includedLimitZero").and_then(Value::as_bool)==Some(false)||sand.get("hasNonZeroIncludedLimit").and_then(Value::as_bool)==Some(true){windows.push(json!({"kind":"grok-bot","label":"Grok Bot · quota communiqué par Cursor","used":percent(sand.get("usagePercent")),"reset":text(sand.get("nextResetTimestampUtc")),"durationMins":10080}));}}
  }
- json!({"id":id,"email":email,"plan":plan_name(summary,sand),"unified":unified,"windows":windows})
+ json!({"id":id,"email":email,"plan":plan_name(summary,sand),"billingCycleEnd":text(summary.get("billingCycleEnd")),"unified":unified,"windows":windows})
 }
 
 fn fetch_cookie(client: &reqwest::blocking::Client, base: &str, cookie: &str) -> Result<Value, String> {

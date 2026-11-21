@@ -62,7 +62,9 @@ jobs:
           tagName: ${{ env.RELEASE_TAG }}
           releaseName: Nivra ${{ env.RELEASE_TAG }}
           releaseBody: |
-            Réinitialisations Codex offertes, fenêtre de détails repensée, icônes actualisées et lecture des comptes améliorée.
+            Dans Informations du compte, ajoute une date de fin d’abonnement ou une note personnelle. Nivra conserve ces informations sur ton appareil et signale les échéances proches.
+
+            Les écrans de connexion, de confirmation, de personnalisation et de mises à jour ont aussi été actualisés.
 
             Télécharge Nivra pour Windows avec le programme d’installation ci-dessous. Les installations existantes peuvent utiliser Réglages → Mises à jour.
           releaseDraft: true

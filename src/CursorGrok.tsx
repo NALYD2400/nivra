@@ -1,8 +1,10 @@
-import {useEffect,useRef,useState,type ReactNode,type PointerEvent} from 'react';
+import {useEffect,useRef,useState,type MouseEventHandler,type ReactNode,type PointerEvent} from 'react';
 import {invoke,isTauri} from '@tauri-apps/api/core';
-import {Clock3,RefreshCw,Info,Trash2} from 'lucide-react';
+import {Clock3,RefreshCw,Info} from 'lucide-react';
 import './cursor-grok.css';
 import {subscriptionPlan} from './subscription-plan';
+import {AccountInfo} from './AccountInfo';
+import {AccountRemoval} from './AccountRemoval';
 import type {CursorUsage} from './quota-forecast';
 
 type Usage=CursorUsage;
@@ -28,7 +30,7 @@ export function useCursorQuota(){
  return {data,error,loading,enabled,updated,refresh,forget,lastError,cancelPending};
 }
 function reset(value:string|null){if(!value)return 'Renouvellement non communiqué';const date=new Date(value);return Number.isNaN(date.getTime())?'Renouvellement non communiqué':`Renouvellement : ${date.toLocaleString('fr-FR')}`}
-export function CursorGrok({quota,onConnect,brand,compact=false,grok=false,dragHandle,accountId,dragging=false,onPointerDown}:{quota:ReturnType<typeof useCursorQuota>;onConnect:()=>void;brand:ReactNode;compact?:boolean;grok?:boolean;dragHandle?:ReactNode;accountId?:string;dragging?:boolean;onPointerDown?:(event:PointerEvent<HTMLElement>)=>void}){
+export function CursorGrok({quota,onConnect,brand,compact=false,grok=false,dragHandle,accountId,dragging=false,onPointerDown}:{quota:ReturnType<typeof useCursorQuota>;onConnect:MouseEventHandler<HTMLButtonElement>;brand:ReactNode;compact?:boolean;grok?:boolean;dragHandle?:ReactNode;accountId?:string;dragging?:boolean;onPointerDown?:(event:PointerEvent<HTMLElement>)=>void}){
  const {data,error,loading,updated}=quota;
  const windows=grok&&data?.unified!==true?data?.windows.filter(window=>window.kind==='grok-bot'):data?.windows;
  const service=data?.unified?'Cursor · xAI / Grok':grok?'xAI / Grok':'Cursor';
@@ -37,10 +39,10 @@ export function CursorGrok({quota,onConnect,brand,compact=false,grok=false,dragH
   <div className="account-head"><div className="account-identity">{dragHandle}{brand}<div className="identity-copy">
    <div className="account-title">{data?.email??`Compte ${service}`}<span className={`pill ${error?'account-warning':'live'}`}>{error?'À vérifier':data?.unified?'Quota partagé':data?'Connecté':'Lecture en cours'}</span>{error&&<button type="button" className="account-reconnect" disabled={loading} onClick={onConnect}>Reconnecter</button>}</div>
    <p>{service} <span>·</span> {subscriptionPlan(data?.plan)}</p>
-  </div></div><div className="account-actions">
+  </div></div><div className="account-actions"><AccountInfo key={data?.id} service={grok&&!data?.unified?"xAI / Grok":"Cursor"} account={data?.email??service} accountId={data?.id} plan={data?.plan} billingCycleEnd={data?.billingCycleEnd}/>
    {time&&<span className="account-updated" title={`Dernière actualisation à ${time}`} aria-label={`Dernière actualisation à ${time}`}><Clock3 size={12}/>{time}</span>}
    <button type="button" className="icon-button" title="Actualiser" aria-label={`Actualiser ${service}`} disabled={loading} onClick={()=>void quota.refresh()}><RefreshCw size={15} className={loading?'spin':''}/></button>
-   <button type="button" className="icon-button danger" title="Arrêter le suivi dans Nivra" aria-label={`Retirer ${service} de Nivra`} disabled={loading} onClick={quota.forget}><Trash2 size={15}/></button>
+   <AccountRemoval account={data?.email??service} kind="stop" disabled={loading} onConfirm={quota.forget}/>
   </div></div>
   {data?<div className="quota-grid cursor-grok-windows">{windows?.length?windows.map(window=><div key={window.kind} className="quota-window"><div className="quota-label"><span>{window.kind==='shared'?'7 jours · réserve partagée':window.label}</span><span className="quota-number">{window.used===null?'—':<>{new Intl.NumberFormat('fr-FR',{maximumFractionDigits:1}).format(100-window.used)}<span>%</span></>}</span></div><div className="progress" role="progressbar" aria-label={window.label} aria-valuemin={0} aria-valuemax={100} aria-valuenow={window.used===null?undefined:100-window.used}><span style={{width:`${window.used===null?0:100-window.used}%`}}/></div><div className="quota-reset"><Clock3 size={12}/>{reset(window.reset)}</div></div>):<p className="form-note">Le service n’a communiqué aucun quota pour ce compte.</p>}</div>:<p className="form-note" role={error?'alert':'status'}><Info size={14}/>{loading?'Lecture du compte et de son quota…':error||'Actualise pour retrouver ton compte.'}</p>}
   {data&&error&&<p className="form-note" role="alert"><Info size={14}/>{error}</p>}

@@ -11,13 +11,14 @@ import {comparisonGroups,forecastWindows,type ForecastAccount} from './quota-for
 import { estimateUsage, inspectUsage, usagePace, type UsagePoint, type UsageWindow } from './usage-forecast';
 
 type Account = ForecastAccount;
-type Props = {accounts:Account[];history:UsagePoint[];icon:string;onOpenAccounts:()=>void};
+type Props = {accounts:Account[];history:UsagePoint[];icon:string;animationsEnabled:boolean;onOpenAccounts:()=>void};
 
 function AccountLogo({service}:{service:Account['service']}){return <span className="forecast-provider-mark" aria-hidden="true">{service==='Claude Code'?<img src={claudeIcon} alt=""/>:service==='xAI / Grok'?<img className="xai-logo" src={xaiIcon} alt=""/>:service==='Cursor'?<><img className="forecast-logo-dark" src={cursorDark} alt=""/><img className="forecast-logo-light" src={cursorLight} alt=""/></>:<><img className="forecast-logo-dark" src={openaiWhite} alt=""/><img className="forecast-logo-light" src={openaiBlack} alt=""/></>}</span>}
 
 
 function AccountSelect({accounts,current,onSelect}:{accounts:Account[];current:string;onSelect:(id:string)=>void}){
  const [open,setOpen]=useState(false);
+ const selectedAccount=accounts.find(account=>account.id===current);
  const container=useRef<HTMLDivElement>(null);
  const trigger=useRef<HTMLButtonElement>(null);
  const list=useRef<HTMLDivElement>(null);
@@ -40,7 +41,7 @@ function AccountSelect({accounts,current,onSelect}:{accounts:Account[];current:s
   options[next]?.focus();
  };
  return <div className="forecast-account-select" ref={container}>
-  <button ref={trigger} type="button" className="forecast-select-trigger" aria-label="Choisir un compte" aria-haspopup="listbox" aria-expanded={open} aria-controls="forecast-account-options" onClick={()=>setOpen(!open)} onKeyDown={event=>{if(event.key==='ArrowDown'||event.key==='ArrowUp'){event.preventDefault();setOpen(true)}}}><AccountLogo service={accounts.find(account=>account.id===current)?.service??'Codex'}/><span key={current} className="forecast-selected-name">{accounts.find(account=>account.id===current)?.name}</span><ChevronDown size={15} className={open?'is-open':''}/></button>
+  <button ref={trigger} type="button" className="forecast-select-trigger" aria-label={selectedAccount?`Compte sélectionné : ${selectedAccount.name}`:'Choisir un compte'} aria-haspopup="listbox" aria-expanded={open} aria-controls={open?'forecast-account-options':undefined} onClick={()=>setOpen(!open)} onKeyDown={event=>{if(event.key==='ArrowDown'||event.key==='ArrowUp'){event.preventDefault();setOpen(true)}}}><AccountLogo service={selectedAccount?.service??'Codex'}/><span key={current} className="forecast-selected-name">{selectedAccount?.name}</span><ChevronDown size={15} className={open?'is-open':''}/></button>
   {open&&<div ref={list} id="forecast-account-options" className="forecast-select-menu" role="listbox" aria-label="Comptes suivis" onKeyDown={onListKey}>{accounts.map(account=><button key={account.id} type="button" role="option" aria-selected={account.id===current} className="forecast-select-option" onClick={()=>{onSelect(account.id);close()}}><AccountLogo service={account.service}/><span>{account.name}</span>{account.id===current&&<Check size={14} className="forecast-option-check"/>}</button>)}</div>}
  </div>;
 }
@@ -183,7 +184,7 @@ function ComparisonWindow({items,history,label,now}:{items:{account:Account;wind
  return <section className="forecast-card comparison-card"><div className="comparison-head"><h2>{name}</h2><span>Quota restant</span></div><QuotaChart series={series} now={now} label={name}/>{missing>0&&<p className="comparison-unavailable">{missing} compte{missing>1?'s':''} sans quota disponible</p>}</section>;
 }
 
-export function Forecast({accounts,history,icon,onOpenAccounts}:Props){
+export function Forecast({accounts,history,icon,animationsEnabled,onOpenAccounts}:Props){
  const [selected,setSelected]=useState('');
  const [mode,setMode]=useState<'one'|'all'>('one');
  function switchMode(next:'one'|'all'){if(next!==mode)setMode(next)}
@@ -199,10 +200,10 @@ export function Forecast({accounts,history,icon,onOpenAccounts}:Props){
  useLayoutEffect(()=>{
   if(previousView.current===viewKey)return;
   previousView.current=viewKey;
-  if(matchMedia('(prefers-reduced-motion: reduce)').matches)return;
+  if(!animationsEnabled||matchMedia('(prefers-reduced-motion: reduce)').matches)return;
   const animations=Array.from(view.current?.querySelectorAll<HTMLElement>('.forecast-card,.forecast-no-account')??[]).map((node,index)=>node.animate?.([{opacity:.45,transform:'translateY(9px)'},{opacity:1,transform:'translateY(0)'}],{duration:620,delay:index*55,easing:'cubic-bezier(.16,1,.3,1)',fill:'backwards'}));
   return()=>animations.forEach(animation=>animation?.cancel());
- },[viewKey]);
+ },[viewKey,animationsEnabled]);
  return <div className="forecast-page"><header className="forecast-header"><div className="forecast-heading"><img src={icon} alt=""/><h1>Prévisions</h1></div></header>
  {accounts.length===0?<div className="empty forecast-no-account"><div className="forecast-empty-icon"><LineChart size={23}/></div><div><b>Aucun compte suivi</b><p>Connecte un compte pour commencer à recueillir ses relevés.</p><button className="text-button" onClick={onOpenAccounts}>Voir mes comptes <ArrowUpRight size={14}/></button></div></div>:<><div className="forecast-controls"><div className="forecast-control-actions"><div className="forecast-mode" data-mode={mode} role="group" aria-label="Affichage des prévisions"><button type="button" title="Voir le quota restant et la prévision du compte sélectionné." aria-pressed={mode==='one'} onClick={()=>switchMode('one')}>Un compte</button><button type="button" title="Comparer les quotas restants et leur évolution pour tous tes comptes." aria-pressed={mode==='all'} onClick={()=>switchMode('all')}>Tous les comptes</button></div>{mode==='one'&&<AccountSelect accounts={accounts} current={current!} onSelect={setSelected}/>}</div></div>
  <div ref={view} key={viewKey} className="forecast-view">{mode==='all'?<div className="forecast-list"><>{groups.map(group=><ComparisonWindow key={group.key} items={group.items} label={group.label} history={history} now={now}/>)}{!groups.length&&<div className="empty forecast-no-account"><Info size={20}/><div><b>Aucun quota disponible</b><p>Les prévisions apparaîtront dès qu’un service communiquera ses quotas.</p></div></div>}</></div>:account?.service==='Claude Code'?<div className="empty forecast-no-account"><Info size={20}/><div><b>Quotas Claude indisponibles</b><p>Nivra ne peut pas encore lire les quotas de ce compte.</p></div></div>:<div className="forecast-list">{account&&forecastWindows(account,history).map(window=><WindowForecast key={window.id} account={account} window={window.id} label={window.label} history={history} now={now}/>)}{account&&forecastWindows(account,history).length===0&&<div className="empty forecast-no-account"><Info size={20}/><div><b>Quota non communiqué</b><p>Le service n’a pas encore fourni de limite pour ce compte.</p></div></div>}</div>}</div>
