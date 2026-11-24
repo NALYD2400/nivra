@@ -62,9 +62,9 @@ jobs:
           tagName: ${{ env.RELEASE_TAG }}
           releaseName: Nivra ${{ env.RELEASE_TAG }}
           releaseBody: |
-            Dans Informations du compte, ajoute une date de fin d’abonnement ou une note personnelle. Nivra conserve ces informations sur ton appareil et signale les échéances proches.
+            Connecte Mistral dans ton navigateur habituel pour retrouver le quota mensuel Vibe Code, le montant utilisé et la date de réinitialisation.
 
-            Les écrans de connexion, de confirmation, de personnalisation et de mises à jour ont aussi été actualisés.
+            Les boutons des cartes de compte sont regroupés, avec l’heure de dernière lecture en dessous.
 
             Télécharge Nivra pour Windows avec le programme d’installation ci-dessous. Les installations existantes peuvent utiliser Réglages → Mises à jour.
           releaseDraft: true

@@ -1,6 +1,7 @@
 import type {UsageLimits,UsagePoint,UsageWindow} from './usage-forecast';
+import type {Service} from './Services';
 
-export type ForecastAccount={id:string;name:string;service:'Codex'|'Claude Code'|'Cursor'|'xAI / Grok';windows?:{id:UsageWindow;label:string}[]};
+export type ForecastAccount={id:string;name:string;service:Service;windows?:{id:UsageWindow;label:string}[]};
 export type CursorUsage={id:string;email:string;plan:string|null;billingCycleEnd?:string|null;unified:boolean|null;windows:{kind:string;label:string;used:number|null;reset:string|null;start?:string|null;durationMins?:number|null}[];warning:string|null};
 
 // One source per account, even when the same pool appears on two service pages.

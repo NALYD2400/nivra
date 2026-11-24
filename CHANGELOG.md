@@ -1,5 +1,10 @@
 # Historique des versions
 
+## 0.1.5 — 24 novembre 2026
+
+- Connexion Mistral dans le navigateur par défaut de Windows. Nivra affiche le quota mensuel Vibe Code, son plafond et sa date de réinitialisation.
+- Regroupement des boutons d’information, d’actualisation et de retrait sur les cartes. L’heure de dernière lecture est affichée en dessous.
+
 ## 0.1.4 — 21 novembre 2026
 
 - Ajout d’une date de fin d’abonnement et d’une note personnelle dans les informations du compte. Les deux champs sont facultatifs et enregistrés sur l’appareil.

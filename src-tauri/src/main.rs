@@ -1,6 +1,7 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 mod cursor_usage;
 mod browser;
+mod mistral_usage;
 use serde_json::{json, Value};
 use std::{io::{BufRead, BufReader, Write}, process::{Command, Stdio}, sync::mpsc, time::Duration};
 use tauri::Manager;
@@ -186,7 +187,7 @@ async fn disconnect_codex(app: tauri::AppHandle, profile: String) -> Result<(), 
 
 #[tauri::command]
 fn open_usage(service: &str) -> Result<(), String> {
-    let url=match service { "Codex"=>"https://chatgpt.com/settings/usage", "Claude Code"=>"https://claude.ai/settings/usage", "Cursor"=>"https://cursor.com/dashboard", "xAI / Grok"=>"https://grok.com/dashboard", _=>return Err("Service inconnu".into()) };
+    let url=match service { "Codex"=>"https://chatgpt.com/settings/usage", "Claude Code"=>"https://claude.ai/settings/usage", "Cursor"=>"https://cursor.com/dashboard", "xAI / Grok"=>"https://grok.com/dashboard", "Mistral"=>"https://admin.mistral.ai/subscription", _=>return Err("Service inconnu".into()) };
     browser::open(url)
 }
-fn main(){ tauri::Builder::default().plugin(tauri_plugin_updater::Builder::new().build()).plugin(tauri_plugin_process::init()).invoke_handler(tauri::generate_handler![cursor_usage::cursor_usage,cursor_usage::login_cursor,codex_usage,login_codex,disconnect_codex,claude_account,login_claude,disconnect_claude,cancel_login,open_usage]).run(tauri::generate_context!()).expect("Erreur au lancement de Quota"); }
+fn main(){ tauri::Builder::default().plugin(tauri_plugin_updater::Builder::new().build()).plugin(tauri_plugin_process::init()).invoke_handler(tauri::generate_handler![cursor_usage::cursor_usage,cursor_usage::login_cursor,codex_usage,login_codex,disconnect_codex,claude_account,login_claude,disconnect_claude,cancel_login,open_usage,mistral_usage::login_mistral,mistral_usage::mistral_usage,mistral_usage::disconnect_mistral]).run(tauri::generate_context!()).expect("Erreur au lancement de Quota"); }

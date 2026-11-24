@@ -3,8 +3,10 @@ import {ArrowRight,Link2,Plus} from 'lucide-react';
 import servicesIcon from './assets/summary-services-ui.png';
 import './services.css';
 
-type Service='Codex'|'Claude Code'|'Cursor'|'xAI / Grok';
-type ServiceQuota={remaining:number;label:string;account?:string};
+export type Service='Codex'|'Claude Code'|'Cursor'|'xAI / Grok'|'Mistral';
+type ServiceQuota={label:string;account?:string}&(
+ {remaining:number}|{usage:{percent:number;text:string}}
+);
 export type ServiceCard={
  service:Service;name:string;description:string;accounts:number;identity:string;
  plans:string[];status:'available'|'connected'|'loading'|'attention';
@@ -27,8 +29,10 @@ export function Services({cards,onOpen,onAdd,renderBrand}:Props){
    <span className="service-tile-account"><span title={card.identity}>{card.accounts?card.identity:card.status==='loading'?'Lecture du compte…':'Aucun compte ajouté'}</span><span className="service-tile-plan">{card.plans.length?`${card.plans.slice(0,2).join(' · ')}${card.plans.length>2?` +${card.plans.length-2}`:''}`:card.accounts?'Offre non communiquée':'Connecte ton compte pour commencer'}</span></span>
    <span className="service-tile-usage" id={`${quotaId}-quota-${index}`}>
     {card.quotas.length?card.quotas.map((quota,quotaIndex)=><span className="service-tile-quota" key={quotaIndex}>
-     <span className="service-tile-quota-label"><span title={quota.account}>{quota.label}</span><strong>{new Intl.NumberFormat('fr-FR',{maximumFractionDigits:1}).format(quota.remaining)}<small> % restants</small></strong></span>
-     <span className="service-tile-track" aria-hidden="true"><span style={{width:`${quota.remaining}%`}}/></span>
+     <span className="service-tile-quota-label"><span title={quota.account}>{quota.label}</span><strong>
+      {'usage' in quota?quota.usage.text:<>{new Intl.NumberFormat('fr-FR',{maximumFractionDigits:1}).format(quota.remaining)}<small> % restants</small></>}
+     </strong></span>
+     <span className="service-tile-track" aria-hidden="true"><span style={{width:`${'usage' in quota?quota.usage.percent:quota.remaining}%`}}/></span>
     </span>):<span className="service-tile-no-quota">{card.service==='Claude Code'?'Quotas non disponibles pour le moment':card.accounts?'Quota momentanément indisponible':'Tes quotas apparaîtront ici'}</span>}
    </span>
    <span className="service-tile-footer"><span>{card.shared?<><Link2 size={13}/>Réserve partagée</>:card.accounts?`${card.accounts} compte${card.accounts>1?'s':''} suivi${card.accounts>1?'s':''}`:'Connexion disponible'}</span><span className="service-tile-action">{card.accounts?'Voir mes comptes':'Découvrir'}<ArrowRight size={15}/></span></span>

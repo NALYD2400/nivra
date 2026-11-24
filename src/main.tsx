@@ -4,13 +4,13 @@ import xaiIcon from './assets/brands/xai.svg';
 import updateIcon from './assets/update-icon-ui.png';
 import addAccountAction from './assets/add-account-action-ui.png';
 import servicesIcon from './assets/summary-services-ui.png';
-import {Services,type ServiceCard} from './Services';
+import {Services,type Service,type ServiceCard} from './Services';
 import {CursorGrok,useCursorQuota} from './CursorGrok';
 import {AccountInfo} from './AccountInfo';
 import {AccountRemoval} from './AccountRemoval';
 import cursorLight from './assets/brands/cursor-light.svg';
 import cursorDark from './assets/brands/cursor-dark.svg';
-import { AccountConnection } from './AccountConnection';
+import { AccountConnection, services } from './AccountConnection';
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type FormEvent, type MouseEvent as ReactMouseEvent, type PointerEvent as ReactPointerEvent } from 'react';
 import { createRoot } from 'react-dom/client';
 import { flushSync } from 'react-dom';
@@ -29,6 +29,7 @@ import menuIcon from './assets/menu-icon.png';
 import openaiWhite from './assets/brands/openai-white.svg';
 import openaiBlack from './assets/brands/openai-black.svg';
 import claudeIcon from './assets/brands/claude.svg';
+import mistralIcon from './assets/brands/mistral.svg';
 import { AppearanceSettings, readAppearance, type Appearance } from './Appearance';
 import { Background } from './components/Background';
 import { useNivraUpdater } from './Updater';
@@ -41,28 +42,70 @@ import RibbonGlow from './components/originkit/ui/ribbon-glow';
 import './originkit.css';
 import './style.css';
 
-type Service = 'Codex' | 'Claude Code' | 'Cursor' | 'xAI / Grok';
 type Page=Service|'Tous'|'Reglages'|'Previsions'|'Services';
 function isServicePage(page:Page):page is Service{return services.some(service=>service===page)}
-type Entry = { id:string; service:Service; name:string; remaining:number|null; reset:string; updated:string; mode?:'codex'|'claude'|'local'|'cursor' };
+type Entry = { id:string; service:Service; name:string; remaining:number|null; reset:string; updated:string; mode?:'codex'|'claude'|'local'|'cursor'|'mistral' };
 type WindowLimit = { usedPercent:number; windowDurationMins:number|null; resetsAt:number|null };
 type ResetCredit = {id:string; title:string|null; description:string|null; grantedAt:number; expiresAt:number|null; status:string};
 type ResetCredits = {availableCount:number; credits:ResetCredit[]|null};
 type Result = { account:{email?:string; type?:string; planType?:string}|null; limits:{rateLimits?:{primary?:WindowLimit|null; secondary?:WindowLimit|null}; rateLimitResetCredits?:ResetCredits|null} };
 type ClaudeAccount = {email?:string|null; subscriptionType?:string|null};
 type Snapshot = { data?:Result; error?:string; updated?:string; loading?:boolean };
-const services:Service[] = ['Codex','Claude Code','Cursor','xAI / Grok'];
-const links:Record<Service,string> = { Codex:'https://chatgpt.com/settings/usage', 'Claude Code':'https://claude.ai/settings/usage',Cursor:'https://cursor.com/dashboard','xAI / Grok':'https://grok.com/dashboard' };
-const descriptions:Record<Service,string> = { Codex:'OpenAI', 'Claude Code':'Anthropic',Cursor:'Cursor','xAI / Grok':'xAI' };
+type MistralUsage = {usedPercent:number;limit:number|null;currency:string|null;resetAt:string|null;plan:string|null};
+type MistralSnapshot = {data?:MistralUsage;error?:string;updated?:string;loading?:boolean};
+const mistralQuotaLabel='Quota mensuel Vibe Code';
+const links:Record<Service,string> = { Codex:'https://chatgpt.com/settings/usage', 'Claude Code':'https://claude.ai/settings/usage',Cursor:'https://cursor.com/dashboard','xAI / Grok':'https://grok.com/dashboard',Mistral:'https://admin.mistral.ai/subscription' };
+const descriptions:Record<Service,string> = { Codex:'OpenAI', 'Claude Code':'Anthropic',Cursor:'Cursor','xAI / Grok':'xAI',Mistral:'Mistral AI' };
 function dateText(value:string|number|null|undefined) { if (!value) return 'Non renseignée'; const d = new Date(typeof value === 'number' ? value*1000 : value); return isNaN(d.getTime()) ? 'Non renseignée' : new Intl.DateTimeFormat('fr-FR',{dateStyle:'medium',timeStyle:'short'}).format(d); }
 function shortTime(value?:string) { return value ? new Date(value).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'}) : '—'; }
 function period(minutes:number|null|undefined, fallback:string) { if (!minutes) return fallback; if (minutes >= 1440) return `${Math.round(minutes/1440*10)/10} jours`; if (minutes >= 60) return `${Math.round(minutes/60*10)/10} heures`; return `${minutes} min`; }
 function amount(limit?:WindowLimit|null) { return limit && typeof limit.usedPercent === 'number' ? Math.max(0,Math.min(100,Math.round(100-limit.usedPercent))) : null; }
 function BrandMark({service,small=false}:{service:Service;small?:boolean}) {
+  if(service==='Mistral')return <span className={`provider-mark mistral ${small?'small':''}`} aria-hidden="true"><img src={mistralIcon} alt=""/></span>;
   const icon=service==='Cursor'?<><img className="brand-on-dark" src={cursorDark} alt=""/><img className="brand-on-light" src={cursorLight} alt=""/></>:service==='xAI / Grok'?<img className="xai-logo" src={xaiIcon} alt=""/>:service==='Claude Code'?<img src={claudeIcon} alt=""/>:<><img className="brand-on-dark" src={openaiWhite} alt=""/><img className="brand-on-light" src={openaiBlack} alt=""/></>;
   return <span className={`provider-mark ${service==='Claude Code'?'claude':service==='xAI / Grok'?'xai':service.toLowerCase()} ${small?'small':''}`} aria-hidden="true">{icon}</span>;
 }
-function Limit({value,label}:{value?:WindowLimit|null;label:string}) { const left=amount(value); return <div className="quota-window"><div className="quota-label"><span>{period(value?.windowDurationMins,label)}</span><span className="quota-number">{left === null ? '—' : <>{left}<span>%</span></>}</span></div><div className="progress" role="progressbar" aria-label={`Quota restant, ${period(value?.windowDurationMins,label)}`} aria-valuemin={0} aria-valuemax={100} aria-valuenow={left??undefined}><span style={{width:`${left??0}%`}} /></div><div className="quota-reset"><Clock3 size={12}/><span>{value?.resetsAt?`Se renouvelle le ${dateText(value.resetsAt)}`:'Réinitialisation indisponible'}</span></div></div>; }
+function Limit({value,label}:{value?:WindowLimit|null;label:string}) {
+ const left=amount(value);
+ const windowLabel=period(value?.windowDurationMins,label);
+ return <div className="quota-window"><div className="quota-label"><span>{windowLabel}</span><span className="quota-number">{left===null?'—':<>{left}<span>%</span></>}</span></div><div className="progress" role="progressbar" aria-label={`Quota restant, ${windowLabel}`} aria-valuemin={0} aria-valuemax={100} aria-valuenow={left??undefined}><span style={{width:`${left??0}%`}} /></div><div className="quota-reset"><Clock3 size={12}/><span>{value?.resetsAt?`Se renouvelle le ${dateText(value.resetsAt)}`:'Réinitialisation indisponible'}</span></div></div>;
+}
+
+function mistralGauge(data:MistralUsage){
+ const percent=Math.min(100,data.usedPercent);
+ if(data.limit!==null&&data.currency){
+  const format=new Intl.NumberFormat('fr-FR',{style:'currency',currency:data.currency,minimumFractionDigits:0,maximumFractionDigits:2});
+  const used=format.format(data.limit*(data.usedPercent/100));
+  const limit=format.format(data.limit);
+  return {percent,used,limit,text:`${used} utilisés sur ${limit}`};
+ }
+ const used=new Intl.NumberFormat('fr-FR',{style:'percent',maximumFractionDigits:1}).format(data.usedPercent/100);
+ return {percent,used,limit:null,text:`${used} utilisés`};
+}
+
+function MistralQuota({data,stale}:{data?:MistralUsage;stale:boolean}){
+ const reset=data?.resetAt;
+ const gauge=data&&mistralGauge(data);
+ const validReset=reset&&Number.isFinite(Date.parse(reset));
+ const dateOnly=validReset&&/^\d{4}-\d{2}-\d{2}$/.test(reset);
+ const resetDate=validReset?(dateOnly
+  ?new Intl.DateTimeFormat('fr-FR',{dateStyle:'medium',timeZone:'UTC'}).format(new Date(reset))
+  :dateText(reset)):null;
+ return <div className="quota-window">
+  <div className="quota-label">{stale?'Dernier quota Vibe Code connu':mistralQuotaLabel}</div>
+  <div className="mistral-quota-values">
+   <strong className="quota-number">{gauge?.used??'—'}</strong>
+   {gauge?.limit&&<span className="quota-label">{gauge.limit}</span>}
+  </div>
+  <div className="progress" role="progressbar" aria-label="Utilisation du quota mensuel Vibe Code"
+   aria-valuemin={0} aria-valuemax={100} aria-valuenow={gauge?.percent} aria-valuetext={gauge?.text}>
+   <span style={{width:`${gauge?.percent??0}%`}}/>
+  </div>
+  <div className="quota-reset"><Clock3 size={12}/>
+   {resetDate&&reset?<time dateTime={reset}>Réinitialisation le {resetDate}</time>:<span>Réinitialisation indisponible</span>}
+  </div>
+ </div>;
+}
 
 
 function resetTitle(title:string|null){return title==='Full reset (Weekly + 5 hr)'?'Réinitialisation complète · 7 jours et 5 heures':title||'Réinitialisation Codex'}
@@ -105,7 +148,7 @@ function App() {
  },[]);
  const updater=useNivraUpdater();
  const cursorQuota=useCursorQuota();
- const [entries,setEntries]=useState<Entry[]>(()=>{try{const parsed=JSON.parse(localStorage.getItem('quota-entries')||'[]');return Array.isArray(parsed)?parsed.filter(entry=>entry&&(entry.service==='Codex'||entry.service==='Claude Code')):[]}catch{return []}});
+ const [entries,setEntries]=useState<Entry[]>(()=>{try{const parsed=JSON.parse(localStorage.getItem('quota-entries')||'[]');return Array.isArray(parsed)?parsed.filter(entry=>entry&&(entry.service==='Codex'||entry.service==='Claude Code'||entry.service==='Mistral'&&entry.mode==='mistral')):[]}catch{return []}});
  const [accountOrder,setAccountOrder]=useState(readAccountOrder);
  useEffect(()=>{try{localStorage.setItem('nivra-account-order-v1',JSON.stringify(accountOrder))}catch{/* L’ordre reste disponible pour cette session. */}},[accountOrder]);
  const hasCursorAccount=cursorQuota.enabled||!!cursorQuota.data;
@@ -118,10 +161,14 @@ function App() {
  const [usageHistory,setUsageHistory]=useState(readUsageHistory);
  useEffect(()=>{try{localStorage.setItem('nivra-usage-history-v1',JSON.stringify(usageHistory))}catch{/* Le suivi reste disponible pour cette session. */}},[usageHistory]);
  const [claudeProfiles,setClaudeProfiles]=useState<Record<string,{data?:ClaudeAccount; error?:string; loading?:boolean}>>({});
+ const [mistralProfiles,setMistralProfiles]=useState<Record<string,MistralSnapshot>>({});
  const cursorForecast=useMemo(()=>cursorQuota.enabled&&cursorQuota.data?cursorForecastSource(cursorQuota.data):null,[cursorQuota.enabled,cursorQuota.data]);
  useEffect(()=>{if(cursorForecast)setUsageHistory(old=>recordUsage(old,cursorForecast.account.id,cursorForecast.limits,Date.now()))},[cursorForecast]);
  const forecastAccounts=useMemo<ForecastAccount[]>(()=>[
-  ...entries.filter(entry=>entry.mode==='codex'||entry.mode==='claude').map(entry=>({id:entry.id,service:entry.mode==='claude'?'Claude Code' as const:'Codex' as const,name:profiles[entry.id]?.data?.account?.email||claudeProfiles[entry.id]?.data?.email||entry.name})),
+  ...entries.filter(entry=>entry.mode==='codex'||entry.mode==='claude'||entry.mode==='mistral').map(entry=>({
+   id:entry.id,service:entry.service,name:profiles[entry.id]?.data?.account?.email||claudeProfiles[entry.id]?.data?.email||entry.name,
+   windows:entry.mode==='mistral'?[{id:'primary' as const,label:mistralQuotaLabel}]:undefined,
+  })),
   ...(cursorForecast?[cursorForecast.account]:[])
  ],[entries,profiles,claudeProfiles,cursorForecast]);
  const [page,setPage]=useState<Page>('Tous');
@@ -185,6 +232,89 @@ function App() {
  function closeDialog(){loginAttempt.current++;const profile=loginProfile.current;loginProfile.current=null;if(profile&&isTauri()){if(service==='Cursor'||service==='xAI / Grok')cursorQuota.cancelPending();void invoke('cancel_login',{profile})};setLoginBusy(false);setShow(false)}
  const [show,setShow]=useState(false); const [service,setService]=useState<Service>('Codex');
  const [loginBusy,setLoginBusy]=useState(false); const [loginError,setLoginError]=useState('');
+ const mistralReconnect=useRef<string|null>(null);
+ const mistralBusy=useRef(new Set<string>());
+ function saveMistralUsage(id:string,data:MistralUsage){
+  const now=Date.now();
+  setMistralProfiles(old=>({...old,[id]:{data,updated:new Date(now).toISOString()}}));
+  const reset=data.resetAt?Date.parse(data.resetAt):NaN;
+  if(Number.isFinite(reset))setUsageHistory(old=>recordUsage(old,id,{primary:{
+   usedPercent:Math.min(100,data.usedPercent),resetsAt:reset/1000,windowDurationMins:null,
+  }},now));
+ }
+ async function refreshMistral(id:string){
+  if(mistralBusy.current.has(id))return;
+  mistralBusy.current.add(id);
+  setMistralProfiles(old=>({...old,[id]:{...old[id],loading:true}}));
+  try {
+   saveMistralUsage(id,await invoke<MistralUsage>('mistral_usage',{profile:id}));
+  } catch(e) {
+   setMistralProfiles(old=>({...old,[id]:{...old[id],loading:false,error:String(e)}}));
+  } finally {
+   mistralBusy.current.delete(id);
+  }
+ }
+ const mistralIds=entries.filter(entry=>entry.mode==='mistral').map(entry=>entry.id).sort().join(',');
+ useEffect(()=>{
+  if(!isTauri()||!mistralIds)return;
+  const ids=mistralIds.split(',');
+  const update=()=>ids.forEach(id=>void refreshMistral(id));
+  ids.filter(id=>!mistralProfiles[id]?.data).forEach(id=>void refreshMistral(id));
+  const timer=window.setInterval(update,300000);
+  return()=>window.clearInterval(timer);
+ },[mistralIds]);
+ async function connectMistral(){
+  if(!isTauri()){setLoginError('Ouvre l’application Windows pour te connecter.');return}
+  if(loginProfile.current)return;
+  const existing=mistralReconnect.current;
+  const id=existing??crypto.randomUUID();
+  if(mistralBusy.current.has(id)){
+   setLoginError('Une lecture Mistral est en cours. Réessaie dans un instant.');
+   return;
+  }
+  const attempt=++loginAttempt.current;
+  const loginId=crypto.randomUUID();
+  loginProfile.current=loginId;
+  mistralBusy.current.add(id);
+  setLoginError('');
+  setLoginBusy(true);
+  try {
+   const data=await invoke<MistralUsage>('login_mistral',{profile:id,attempt:loginId});
+   if(attempt!==loginAttempt.current)return;
+   saveMistralUsage(id,data);
+   if(!existing)setEntries(old=>[...old,{
+    id,service:'Mistral',name:'Compte Mistral',remaining:null,reset:'',updated:'',mode:'mistral',
+   }]);
+   setShow(false);
+   navigate('Mistral');
+  } catch(e) {
+   if(attempt===loginAttempt.current)setLoginError(String(e));
+  } finally {
+   mistralBusy.current.delete(id);
+   if(attempt===loginAttempt.current){
+    loginProfile.current=null;
+    setLoginBusy(false);
+   }
+  }
+ }
+ async function disconnectMistral(id:string){
+  if(mistralBusy.current.has(id))return;
+  mistralBusy.current.add(id);
+  setMistralProfiles(old=>({...old,[id]:{...old[id],loading:true}}));
+  try {
+   await invoke('disconnect_mistral',{profile:id});
+   setEntries(old=>old.filter(entry=>entry.id!==id));
+   setMistralProfiles(old=>{
+    const next={...old};
+    delete next[id];
+    return next;
+   });
+  } catch(e) {
+   setMistralProfiles(old=>({...old,[id]:{...old[id],loading:false,error:String(e)}}));
+  } finally {
+   mistralBusy.current.delete(id);
+  }
+ }
  useEffect(()=>{localStorage.setItem('quota-entries',JSON.stringify(entries))},[entries]);
  async function refreshActive(){setActive(old=>({...old,loading:true,error:undefined}));try{if(!isTauri())throw new Error('Ouvre l’application Windows pour consulter les quotas.');const data=await invoke<Result>('codex_usage');setActive({data,updated:new Date().toISOString()})}catch(e){setActive(old=>({...old,loading:false,error:String(e)}))}}
  async function refreshProfile(id:string){setProfiles(old=>({...old,[id]:{...old[id],loading:true,error:undefined}}));try{const data=await invoke<Result>('codex_usage',{profile:id});if(!data.account)throw new Error('Compte indisponible. Reconnecte ce compte.');setProfiles(old=>({...old,[id]:{data,updated:new Date().toISOString()}}));setUsageHistory(old=>recordUsage(old,id,data.limits?.rateLimits,Date.now()))}catch(e){setProfiles(old=>({...old,[id]:{...old[id],loading:false,error:String(e)}}))}}
@@ -201,8 +331,9 @@ function App() {
  async function disconnect(id:string){setProfiles(old=>({...old,[id]:{...old[id],loading:true,error:undefined}}));try{await invoke('disconnect_codex',{profile:id});setEntries(old=>old.filter(x=>x.id!==id))}catch(e){setProfiles(old=>({...old,[id]:{...old[id],loading:false,error:String(e)}}))}}
  async function reconnect(id:string){setProfiles(old=>({...old,[id]:{...old[id],loading:true,error:undefined}}));try{await invoke('login_codex',{profile:id});await refreshProfile(id)}catch(e){setProfiles(old=>({...old,[id]:{...old[id],loading:false,error:String(e)}}))}}
  async function open(service:Service){try{if(isTauri())await invoke('open_usage',{service});else window.open(links[service],'_blank','noopener,noreferrer')}catch{setActive(old=>({...old,error:'Impossible d’ouvrir la page du service.'}))}}
- function openServiceDialog(next:Service,trigger:HTMLButtonElement){
+ function openServiceDialog(next:Service,trigger:HTMLButtonElement,reconnectId:string|null=null){
   trigger.focus({preventScroll:true});
+  mistralReconnect.current=reconnectId;
   setService(next);setLoginError('');setShow(true);
  }
  function openDialog(event:ReactMouseEvent<HTMLButtonElement>){openServiceDialog(isServicePage(page)?page:'Codex',event.currentTarget)}
@@ -306,6 +437,41 @@ function App() {
   }
   return true;
  }
+ function renderMistralAccount(entry:Entry){
+  const {id,name}=entry;
+  const {data,error,loading,updated}=mistralProfiles[id]??{};
+  return <article className={`account-card${draggingId===id?' is-dragging':''}`} data-account-id={id} key={id}
+   onPointerDown={event=>startAccountDrag(event,id)} onDragStart={event=>event.preventDefault()}>
+   <div className="account-head">
+    <div className="account-identity">
+     {renderDragHandle(entry)}
+     <BrandMark service="Mistral"/>
+     <div className="identity-copy">
+      <div className="account-title">{name}
+       {error?<><span className="pill account-warning" title={error}><Info size={12}/> À vérifier</span>
+        <button type="button" className="account-reconnect" disabled={loading}
+         onClick={event=>openServiceDialog('Mistral',event.currentTarget,id)}>Reconnecter</button></>:<span className="pill live">Connecté</span>}
+      </div>
+      <div className="account-subline"><p>Mistral <span>·</span> {subscriptionPlan(data?.plan)}</p></div>
+     </div>
+    </div>
+    <div className="account-tools">
+     <div className="account-actions">
+     <AccountInfo service="Mistral" accountId={id} account={name} plan={data?.plan}/>
+     <button type="button" className="icon-button" title="Actualiser" aria-label="Actualiser Mistral" disabled={loading} onClick={()=>void refreshMistral(id)}>
+      <RefreshCw size={15} className={loading?'spin':''}/>
+     </button>
+     <AccountRemoval account={name} kind="disconnect" disabled={loading} onConfirm={()=>void disconnectMistral(id)}/>
+     </div>
+     {updated&&<span className="account-updated" title={`Dernière actualisation à ${shortTime(updated)}`} aria-label={`Dernière actualisation à ${shortTime(updated)}`}><Clock3 size={12}/>{shortTime(updated)}</span>}
+    </div>
+   </div>
+   {error&&<p className="form-note" role="status"><Info size={14}/> {error}</p>}
+   <div className="quota-grid mistral-quota">
+    <MistralQuota data={data} stale={Boolean(error&&data)}/>
+   </div>
+  </article>;
+ }
  const serviceCards:ServiceCard[]=services.map(item=>{
   if(item==='Cursor'||item==='xAI / Grok'){
    const {data,error,loading}=cursorQuota;
@@ -314,6 +480,19 @@ function App() {
    return {service:item,name:item,description:item==='Cursor'?'Tes comptes et quotas de développement.':'Ton abonnement et ta réserve Grok.',accounts:data?1:0,identity:data?.email??'',plans:data?.plan?[subscriptionPlan(data.plan)]:[],status:loading?'loading':error?'attention':data?'connected':'available',shared:data?.unified===true,quotas:window&&window.used!==null&&Number.isFinite(window.used)?[{remaining:Math.max(0,Math.min(100,100-window.used)),label:error?'Dernier quota connu':data?.unified?'Réserve hebdomadaire':window.label}]:[]};
   }
   const saved=entries.filter(entry=>entry.service===item);
+  if(item==='Mistral'){
+   const snapshots=saved.map(entry=>mistralProfiles[entry.id]);
+   const plans=[...new Set(snapshots.flatMap(snapshot=>snapshot?.data?.plan?[subscriptionPlan(snapshot.data.plan)]:[]))];
+   return {
+    service:item,name:item,description:'Le quota mensuel de ton abonnement Vibe Code.',
+    accounts:saved.length,identity:saved.length>1?`Compte Mistral +${saved.length-1}`:saved[0]?.name??'',
+    plans,status:snapshots.some(snapshot=>snapshot?.loading)?'loading':snapshots.some(snapshot=>snapshot?.error)?'attention':saved.length?'connected':'available',
+    shared:false,quotas:snapshots.flatMap(snapshot=>snapshot?.data?[{
+     usage:mistralGauge(snapshot.data),
+     label:snapshot.error?'Dernier quota connu':mistralQuotaLabel,
+    }]:[]),
+   };
+  }
   const plans=[...new Set(saved.map(entry=>item==='Claude Code'?claudeProfiles[entry.id]?.data?.subscriptionType:profiles[entry.id]?.data?.account?.planType).filter((plan):plan is string=>!!plan?.trim()).map(subscriptionPlan))];
   const name=saved[0]?(item==='Claude Code'?claudeProfiles[saved[0].id]?.data?.email:profiles[saved[0].id]?.data?.account?.email)||saved[0].name:'';
   const attention=saved.some(entry=>item==='Claude Code'?claudeProfiles[entry.id]?.error:profiles[entry.id]?.error);
@@ -346,10 +525,12 @@ function App() {
     {page==='Tous'&&<section className="summary" aria-label="Résumé"><div className="summary-cell"><div className="summary-icon"><img className="summary-art accounts-art" src={summaryAccounts} alt=""/></div><div><span>Comptes suivis</span><strong>{count}</strong></div></div><div className="summary-cell"><div className="summary-icon"><img className="summary-art services-art" src={summaryServices} alt=""/></div><div><span>Services</span><strong>{sourceCount}</strong></div></div><div className="summary-cell"><div className="summary-icon"><img className="summary-art clock-art" src={summaryClock} alt=""/></div><div><span>Dernière lecture Codex</span><strong className="time-value">{shortTime(lastCodexUpdate)}</strong></div></div></section>}
     <div className="section-header accounts-heading"><div><h2>Mes comptes</h2><p>{page==='Tous'?'Tous tes comptes et leurs quotas, réunis ici.':`Les comptes ${page==='Codex'?'ChatGPT / Codex':page} ajoutés à Nivra.`}</p></div></div>
 
-    {visibleCount===0?<div className="empty"><div className="empty-graphic"><div className="empty-orbit">{page==='Tous'?<img src={overviewV2} alt=""/>:<BrandMark service={page}/>}</div><span className="empty-dot one"/><span className="empty-dot two"/></div><div><b>{page==='Tous'?'Tout commence ici':`Aucun compte ${page==='Codex'?'ChatGPT / Codex':page}`}</b><p>{page==='Tous'||page==='Codex'?'Ajoute un compte pour retrouver ses limites dans ton espace.':'Connecte un compte pour l’ajouter à ton espace.'}</p><button className="text-button" onClick={openDialog}>Ajouter un compte <ArrowUpRight size={14}/></button></div></div>:<><div className="reorder-status" role="status" aria-live="polite">{reorderMessage}</div><div className="account-list">{visible.map(entry=>{if(entry.mode==='cursor')return <CursorGrok key={entry.id} brand={<BrandMark service="Cursor"/>} onConnect={event=>openServiceDialog('Cursor',event.currentTarget)} quota={cursorQuota} compact accountId={entry.id} dragging={draggingId===entry.id} onPointerDown={event=>startAccountDrag(event,entry.id)} dragHandle={renderDragHandle(entry)}/>;const claude=entry.mode==='claude';const local=entry.mode==='local';const state=profiles[entry.id];const claudeState=claudeProfiles[entry.id];const real=entry.mode==='codex';const issue=real?state?.error:claude?claudeState?.error:undefined;const activeEmail=active.data?.account?.email;const profileEmail=state?.data?.account?.email;const isActive=Boolean(real&&activeEmail&&profileEmail&&activeEmail.toLowerCase()===profileEmail.toLowerCase());const connected=real||claude||local;const lim=state?.data?.limits?.rateLimits;return <article className={`account-card${draggingId===entry.id?' is-dragging':''}`} data-account-id={entry.id} key={entry.id} onPointerDown={e=>startAccountDrag(e,entry.id)} onDragStart={e=>e.preventDefault()}><div className="account-head"><div className="account-identity">{renderDragHandle(entry)}<BrandMark service={entry.service}/><div className="identity-copy"><div className="account-title">{(claude?claudeState?.data?.email:state?.data?.account?.email)||entry.name}{issue?<><span className="pill account-warning" role="status" title={issue} aria-label={`${real?'Limites indisponibles':'Connexion à vérifier'} : ${issue}`}><Info size={12}/>{real?'Limites indisponibles':'Connexion à vérifier'}</span><button type="button" className="account-reconnect" onClick={()=>claude?void reconnectClaude(entry.id):void reconnect(entry.id)} disabled={claude?claudeState?.loading:state?.loading}>Reconnecter</button></>:<span className={`pill ${connected?'live':'manual'}`}>{local?'Importé':connected?'Connecté':'Manuel'}</span>}{isActive&&<span className="pill live">Actif dans Codex</span>}</div><div className="account-subline"><p>{entry.service} <span>·</span> {claude?subscriptionPlan(claudeState?.data?.subscriptionType):real?subscriptionPlan(state?.data?.account?.planType):descriptions[entry.service]}</p>{real&&<BankedResets data={state?.data} loading={state?.loading} accountName={profileEmail||entry.name}/>}</div></div></div><div className="account-actions"><AccountInfo service={entry.service} accountId={entry.id} account={(claude?claudeState?.data?.email:state?.data?.account?.email)||entry.name} plan={claude?claudeState?.data?.subscriptionType:real?state?.data?.account?.planType:null}/>{real&&state?.updated&&<span className="account-updated" title={`Dernière actualisation à ${shortTime(state.updated)}`} aria-label={`Dernière actualisation à ${shortTime(state.updated)}`}><Clock3 size={12}/>{shortTime(state.updated)}</span>}{(real||claude)?<button className="icon-button" title="Actualiser" aria-label={`Actualiser ${entry.name}`} disabled={claude?claudeState?.loading:state?.loading} onClick={()=>claude?void refreshClaude(entry.id):void refreshProfile(entry.id)}><RefreshCw size={15} className={(claude?claudeState?.loading:state?.loading)?'spin':''}/></button>:<button className="icon-button" title="Ouvrir le service" aria-label={`Ouvrir ${entry.service}`} onClick={()=>open(entry.service)}><ArrowUpRight size={16}/></button>}<AccountRemoval account={(claude?claudeState?.data?.email:profileEmail)||entry.name} kind={real||claude?'disconnect':'remove'} disabled={claude?claudeState?.loading:state?.loading} onConfirm={()=>claude?void disconnectClaude(entry.id):real?void disconnect(entry.id):setEntries(old=>old.filter(e=>e.id!==entry.id))}/></div></div>{local?<p className="form-note"><Info size={14}/> Compte importé depuis {entry.service}. Les quotas ne sont pas encore disponibles dans Nivra.</p>:claude?<p className="form-note"><Info size={14}/> Quotas Claude indisponibles dans Nivra pour le moment.</p>:real?<><div className="quota-grid"><Limit value={lim?.primary} label="Limite principale"/><Limit value={lim?.secondary} label="Limite secondaire"/></div></>:<div className="manual-values"><div><span>Quota restant</span><strong>{entry.remaining===null?'—':`${entry.remaining} %`}</strong></div><div><span>Réinitialisation</span><strong>{dateText(entry.reset)}</strong></div></div>}</article>})}</div></>}
+    {visibleCount===0?<div className="empty"><div className="empty-graphic"><div className="empty-orbit">{page==='Tous'?<img src={overviewV2} alt=""/>:<BrandMark service={page}/>}</div><span className="empty-dot one"/><span className="empty-dot two"/></div><div><b>{page==='Tous'?'Tout commence ici':`Aucun compte ${page==='Codex'?'ChatGPT / Codex':page}`}</b><p>{page==='Tous'||page==='Codex'?'Ajoute un compte pour retrouver ses limites dans ton espace.':'Connecte un compte pour l’ajouter à ton espace.'}</p><button className="text-button" onClick={openDialog}>Ajouter un compte <ArrowUpRight size={14}/></button></div></div>:<><div className="reorder-status" role="status" aria-live="polite">{reorderMessage}</div><div className="account-list">{visible.map(entry=>{if(entry.mode==='cursor')return <CursorGrok key={entry.id} brand={<BrandMark service="Cursor"/>} onConnect={event=>openServiceDialog('Cursor',event.currentTarget)} quota={cursorQuota} compact accountId={entry.id} dragging={draggingId===entry.id} onPointerDown={event=>startAccountDrag(event,entry.id)} dragHandle={renderDragHandle(entry)}/>;
+     if(entry.mode==='mistral')return renderMistralAccount(entry);
+     const claude=entry.mode==='claude';const local=entry.mode==='local';const state=profiles[entry.id];const claudeState=claudeProfiles[entry.id];const real=entry.mode==='codex';const issue=real?state?.error:claude?claudeState?.error:undefined;const activeEmail=active.data?.account?.email;const profileEmail=state?.data?.account?.email;const isActive=Boolean(real&&activeEmail&&profileEmail&&activeEmail.toLowerCase()===profileEmail.toLowerCase());const connected=real||claude||local;const lim=state?.data?.limits?.rateLimits;return <article className={`account-card${draggingId===entry.id?' is-dragging':''}`} data-account-id={entry.id} key={entry.id} onPointerDown={e=>startAccountDrag(e,entry.id)} onDragStart={e=>e.preventDefault()}><div className="account-head"><div className="account-identity">{renderDragHandle(entry)}<BrandMark service={entry.service}/><div className="identity-copy"><div className="account-title">{(claude?claudeState?.data?.email:state?.data?.account?.email)||entry.name}{issue?<><span className="pill account-warning" role="status" title={issue} aria-label={`${real?'Limites indisponibles':'Connexion à vérifier'} : ${issue}`}><Info size={12}/>{real?'Limites indisponibles':'Connexion à vérifier'}</span><button type="button" className="account-reconnect" onClick={()=>claude?void reconnectClaude(entry.id):void reconnect(entry.id)} disabled={claude?claudeState?.loading:state?.loading}>Reconnecter</button></>:<span className={`pill ${connected?'live':'manual'}`}>{local?'Importé':connected?'Connecté':'Manuel'}</span>}{isActive&&<span className="pill live">Actif dans Codex</span>}</div><div className="account-subline"><p>{entry.service} <span>·</span> {claude?subscriptionPlan(claudeState?.data?.subscriptionType):real?subscriptionPlan(state?.data?.account?.planType):descriptions[entry.service]}</p>{real&&<BankedResets data={state?.data} loading={state?.loading} accountName={profileEmail||entry.name}/>}</div></div></div><div className="account-tools"><div className="account-actions"><AccountInfo service={entry.service} accountId={entry.id} account={(claude?claudeState?.data?.email:state?.data?.account?.email)||entry.name} plan={claude?claudeState?.data?.subscriptionType:real?state?.data?.account?.planType:null}/>{(real||claude)?<button className="icon-button" title="Actualiser" aria-label={`Actualiser ${entry.name}`} disabled={claude?claudeState?.loading:state?.loading} onClick={()=>claude?void refreshClaude(entry.id):void refreshProfile(entry.id)}><RefreshCw size={15} className={(claude?claudeState?.loading:state?.loading)?'spin':''}/></button>:<button className="icon-button" title="Ouvrir le service" aria-label={`Ouvrir ${entry.service}`} onClick={()=>open(entry.service)}><ArrowUpRight size={16}/></button>}<AccountRemoval account={(claude?claudeState?.data?.email:profileEmail)||entry.name} kind={real||claude?'disconnect':'remove'} disabled={claude?claudeState?.loading:state?.loading} onConfirm={()=>claude?void disconnectClaude(entry.id):real?void disconnect(entry.id):setEntries(old=>old.filter(e=>e.id!==entry.id))}/></div>{real&&state?.updated&&<span className="account-updated" title={`Dernière actualisation à ${shortTime(state.updated)}`} aria-label={`Dernière actualisation à ${shortTime(state.updated)}`}><Clock3 size={12}/>{shortTime(state.updated)}</span>}</div></div>{local?<p className="form-note"><Info size={14}/> Compte importé depuis {entry.service}. Les quotas ne sont pas encore disponibles dans Nivra.</p>:claude?<p className="form-note"><Info size={14}/> Quotas Claude indisponibles dans Nivra pour le moment.</p>:real?<><div className="quota-grid"><Limit value={lim?.primary} label="Limite principale"/><Limit value={lim?.secondary} label="Limite secondaire"/></div></>:<div className="manual-values"><div><span>Quota restant</span><strong>{entry.remaining===null?'—':`${entry.remaining} %`}</strong></div><div><span>Réinitialisation</span><strong>{dateText(entry.reset)}</strong></div></div>}</article>})}</div></>}
     </>}</>}
    </div></main>
-  {show&&<AccountConnection service={service} busy={loginBusy} error={loginError} onService={next=>{setService(next);setLoginError('')}} onClose={closeDialog} onConnect={()=>void (service==='Codex'?connectCodex():service==='Claude Code'?connectClaude():connectCursorGrok())} renderBrand={item=><BrandMark service={item} small/>}/>}
+  {show&&<AccountConnection service={service} busy={loginBusy} error={loginError} onService={next=>{setService(next);setLoginError('')}} onClose={closeDialog} onConnect={()=>void (service==='Codex'?connectCodex():service==='Claude Code'?connectClaude():service==='Mistral'?connectMistral():connectCursorGrok())} renderBrand={item=><BrandMark service={item} small/>}/>}
  </div></>;
 }
 const preview = new URLSearchParams(window.location.search).get('preview') === 'ribbon-glow';

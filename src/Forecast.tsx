@@ -5,6 +5,7 @@ import { ArrowUpRight, CalendarClock, Check, ChevronDown, Info, LineChart } from
 import openaiWhite from './assets/brands/openai-white.svg';
 import openaiBlack from './assets/brands/openai-black.svg';
 import claudeIcon from './assets/brands/claude.svg';
+import mistralIcon from './assets/brands/mistral.svg';
 import cursorLight from './assets/brands/cursor-light.svg';
 import cursorDark from './assets/brands/cursor-dark.svg';
 import {comparisonGroups,forecastWindows,type ForecastAccount} from './quota-forecast';
@@ -13,7 +14,7 @@ import { estimateUsage, inspectUsage, usagePace, type UsagePoint, type UsageWind
 type Account = ForecastAccount;
 type Props = {accounts:Account[];history:UsagePoint[];icon:string;animationsEnabled:boolean;onOpenAccounts:()=>void};
 
-function AccountLogo({service}:{service:Account['service']}){return <span className="forecast-provider-mark" aria-hidden="true">{service==='Claude Code'?<img src={claudeIcon} alt=""/>:service==='xAI / Grok'?<img className="xai-logo" src={xaiIcon} alt=""/>:service==='Cursor'?<><img className="forecast-logo-dark" src={cursorDark} alt=""/><img className="forecast-logo-light" src={cursorLight} alt=""/></>:<><img className="forecast-logo-dark" src={openaiWhite} alt=""/><img className="forecast-logo-light" src={openaiBlack} alt=""/></>}</span>}
+function AccountLogo({service}:{service:Account['service']}){return <span className="forecast-provider-mark" aria-hidden="true">{service==='Mistral'?<img src={mistralIcon} alt=""/>:service==='Claude Code'?<img src={claudeIcon} alt=""/>:service==='xAI / Grok'?<img className="xai-logo" src={xaiIcon} alt=""/>:service==='Cursor'?<><img className="forecast-logo-dark" src={cursorDark} alt=""/><img className="forecast-logo-light" src={cursorLight} alt=""/></>:<><img className="forecast-logo-dark" src={openaiWhite} alt=""/><img className="forecast-logo-light" src={openaiBlack} alt=""/></>}</span>}
 
 
 function AccountSelect({accounts,current,onSelect}:{accounts:Account[];current:string;onSelect:(id:string)=>void}){

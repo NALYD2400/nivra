@@ -1,6 +1,6 @@
 [package]
 name = "quota-hub"
-version = "0.1.4"
+version = "0.1.5"
 edition = "2021"
 
 [build-dependencies]
@@ -14,4 +14,7 @@ tauri-plugin-updater = "2.14.1"
 tauri-plugin-process = "2.4.0"
 
 [target.'cfg(windows)'.dependencies]
-windows-sys = { version = "0.61", features = ["Win32_Foundation", "Win32_System_Com", "Win32_UI_Shell", "Win32_UI_WindowsAndMessaging"] }
+base64 = "0.22"
+getrandom = "0.4"
+sha2 = "0.10"
+windows-sys = { version = "0.61", features = ["Win32_Foundation", "Win32_Security_Credentials", "Win32_System_Com", "Win32_UI_Shell", "Win32_UI_WindowsAndMessaging"] }

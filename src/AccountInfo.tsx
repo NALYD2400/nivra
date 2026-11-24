@@ -2,9 +2,9 @@ import {useEffect, useRef, useState, type FormEvent} from 'react';
 import {invoke, isTauri} from '@tauri-apps/api/core';
 import {ExternalLink, Info, Pencil, X} from 'lucide-react';
 import {subscriptionPlan} from './subscription-plan';
+import type {Service} from './Services';
 import './account-info.css';
 
-type Service = 'Codex' | 'Claude Code' | 'Cursor' | 'xAI / Grok';
 type AccountDetails = {endDate: string; note: string};
 
 const pages: Record<Service, string> = {
@@ -12,6 +12,7 @@ const pages: Record<Service, string> = {
   'Claude Code': 'https://claude.ai/settings/usage',
   Cursor: 'https://cursor.com/dashboard',
   'xAI / Grok': 'https://grok.com/dashboard',
+  Mistral: 'https://admin.mistral.ai/subscription',
 };
 const emptyDetails: AccountDetails = {endDate: '', note: ''};
 const noteLimit = 1000;

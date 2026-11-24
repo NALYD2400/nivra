@@ -2,19 +2,20 @@ import { useLayoutEffect, useRef, type ReactNode } from 'react';
 import { ArrowUpRight, Check, CircleAlert, X } from 'lucide-react';
 import './account-connection.css';
 import { ConnectionIcon } from './ConnectionIcons';
+import type { Service } from './Services';
 
-type Service = 'Codex' | 'Claude Code' | 'Cursor' | 'xAI / Grok';
 type Props = {
  service:Service; busy:boolean; error:string;
  onService:(service:Service)=>void; onClose:()=>void; onConnect:()=>void;
  renderBrand:(service:Service)=>ReactNode;
 };
-const services:Service[]=['Codex','Claude Code','Cursor','xAI / Grok'];
+export const services:Service[]=['Codex','Claude Code','Cursor','xAI / Grok','Mistral'];
 const content = {
  Cursor:{name:'Cursor',title:'Connecte ton compte Cursor',description:'Connecte-toi sur la page officielle dans la fenêtre qui va s’ouvrir. Nivra retrouve ensuite ton compte et lit tes quotas automatiquement.',features:[],action:'Connecter mon compte',waiting:'Termine la connexion dans la fenêtre officielle. Ton quota apparaîtra ensuite ici.',note:'Ta session est conservée dans le profil web de Nivra par Windows. Aucun modèle n’est lancé.'},
  'xAI / Grok':{name:'xAI / Grok',title:'Connecte ton compte unifié',description:'Connecte ton compte unifié sur la page officielle. Nivra lit ensuite la réserve partagée entre Cursor, Grok et Grok Bot.',features:[],action:'Connecter mon compte',waiting:'Termine la connexion dans la fenêtre officielle. Ta réserve apparaîtra ensuite ici.',note:'Seule la réserve de ton abonnement est suivie, sans consommer de crédits.'},
  Codex:{name:'ChatGPT / Codex',title:'Retrouve tes quotas ChatGPT',description:'Connecte ton compte dans le navigateur. Nivra récupère ensuite ton adresse et les quotas disponibles.',features:['Quotas et renouvellements','Plusieurs comptes, suivis séparément'],action:'Continuer avec ChatGPT',waiting:'Termine la connexion dans ton navigateur.',note:'Si le coffre Windows refuse le jeton, Codex le conserve dans un fichier local non chiffré de ton profil Windows.'},
  'Claude Code':{name:'Claude Code',title:'Ajoute ton compte Claude',description:'La connexion s’ouvre dans le navigateur avec Claude Code. Ton compte sera ajouté à Nivra une fois connecté.',features:['Adresse du compte, si disponible','Profil distinct pour chaque compte'],action:'Continuer avec Claude',waiting:'Termine la connexion dans ton navigateur.',note:'Les identifiants de ce profil sont conservés localement par Claude Code.'},
+ Mistral:{name:'Mistral',title:'Retrouve ton quota Vibe Code',description:'Connecte-toi chez Mistral dans ton navigateur habituel. Choisis l’organisation utilisée dans Vibe Code pour afficher son quota mensuel dans Nivra.',features:[],action:'Continuer avec Mistral',waiting:'Autorise la connexion dans ton navigateur, puis reviens dans Nivra.',note:'L’autorisation est conservée dans le Gestionnaire d’identifiants Windows.'},
 };
 
 export function AccountConnection({service,busy,error,onService,onClose,onConnect,renderBrand}:Props){

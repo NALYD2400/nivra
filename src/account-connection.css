@@ -12,3 +12,7 @@ html[data-theme="light"] .connection-dialog::backdrop{background:rgba(35,24,51,.
 /* Keep service changes inside a stable dialog frame. */
 .connection-dialog[open]{height:min(590px,calc(100dvh - 94px));display:flex;flex-direction:column;overflow:hidden}.connection-header,.connection-services,.connection-footer{flex-shrink:0}.connection-body{flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain;scrollbar-gutter:stable}.connection-footer{margin-top:auto}@media(max-width:580px){.connection-dialog[open]{height:min(590px,calc(100dvh - 78px))}}@media(max-height:460px){.connection-dialog[open]{overflow-y:auto}.connection-body{flex:none;overflow:visible}}
 .connection-symbol{--connection-icon-highlight:#e1c9ff;--connection-icon-base:#a57be4;color:#d3b3ff;flex-shrink:0}html[data-theme="light"] .connection-symbol{--connection-icon-highlight:#b38add;--connection-icon-base:#7044a1;color:#7950a8}
+.provider-mark.mistral{background:transparent}
+.quota-grid.mistral-quota{grid-template-columns:minmax(0,1fr)}
+.mistral-quota-values{display:flex;align-items:baseline;justify-content:space-between;gap:10px;font-variant-numeric:tabular-nums}
+.mistral-quota-values>.quota-label{font-size:13px}

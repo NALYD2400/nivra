@@ -39,10 +39,13 @@ export function CursorGrok({quota,onConnect,brand,compact=false,grok=false,dragH
   <div className="account-head"><div className="account-identity">{dragHandle}{brand}<div className="identity-copy">
    <div className="account-title">{data?.email??`Compte ${service}`}<span className={`pill ${error?'account-warning':'live'}`}>{error?'À vérifier':data?.unified?'Quota partagé':data?'Connecté':'Lecture en cours'}</span>{error&&<button type="button" className="account-reconnect" disabled={loading} onClick={onConnect}>Reconnecter</button>}</div>
    <p>{service} <span>·</span> {subscriptionPlan(data?.plan)}</p>
-  </div></div><div className="account-actions"><AccountInfo key={data?.id} service={grok&&!data?.unified?"xAI / Grok":"Cursor"} account={data?.email??service} accountId={data?.id} plan={data?.plan} billingCycleEnd={data?.billingCycleEnd}/>
+  </div></div><div className="account-tools">
+   <div className="account-actions">
+    <AccountInfo key={data?.id} service={grok&&!data?.unified?"xAI / Grok":"Cursor"} account={data?.email??service} accountId={data?.id} plan={data?.plan} billingCycleEnd={data?.billingCycleEnd}/>
+    <button type="button" className="icon-button" title="Actualiser" aria-label={`Actualiser ${service}`} disabled={loading} onClick={()=>void quota.refresh()}><RefreshCw size={15} className={loading?'spin':''}/></button>
+    <AccountRemoval account={data?.email??service} kind="stop" disabled={loading} onConfirm={quota.forget}/>
+   </div>
    {time&&<span className="account-updated" title={`Dernière actualisation à ${time}`} aria-label={`Dernière actualisation à ${time}`}><Clock3 size={12}/>{time}</span>}
-   <button type="button" className="icon-button" title="Actualiser" aria-label={`Actualiser ${service}`} disabled={loading} onClick={()=>void quota.refresh()}><RefreshCw size={15} className={loading?'spin':''}/></button>
-   <AccountRemoval account={data?.email??service} kind="stop" disabled={loading} onConfirm={quota.forget}/>
   </div></div>
   {data?<div className="quota-grid cursor-grok-windows">{windows?.length?windows.map(window=><div key={window.kind} className="quota-window"><div className="quota-label"><span>{window.kind==='shared'?'7 jours · réserve partagée':window.label}</span><span className="quota-number">{window.used===null?'—':<>{new Intl.NumberFormat('fr-FR',{maximumFractionDigits:1}).format(100-window.used)}<span>%</span></>}</span></div><div className="progress" role="progressbar" aria-label={window.label} aria-valuemin={0} aria-valuemax={100} aria-valuenow={window.used===null?undefined:100-window.used}><span style={{width:`${window.used===null?0:100-window.used}%`}}/></div><div className="quota-reset"><Clock3 size={12}/>{reset(window.reset)}</div></div>):<p className="form-note">Le service n’a communiqué aucun quota pour ce compte.</p>}</div>:<p className="form-note" role={error?'alert':'status'}><Info size={14}/>{loading?'Lecture du compte et de son quota…':error||'Actualise pour retrouver ton compte.'}</p>}
   {data&&error&&<p className="form-note" role="alert"><Info size={14}/>{error}</p>}
