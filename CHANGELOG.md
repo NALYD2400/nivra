@@ -1,5 +1,11 @@
 # Historique des versions
 
+## 0.1.6 — 24 novembre 2026
+
+- Cartes de compte et jauges alignées sur la même grille. Mistral regroupe le montant utilisé et le plafond au-dessus de sa jauge.
+- Icônes vectorielles pour l’ajout de comptes et les réinitialisations Codex.
+- Les cartes se déplacent directement à la souris ou avec les flèches du clavier lorsque la carte est sélectionnée.
+
 ## 0.1.5 — 24 novembre 2026
 
 - Connexion Mistral dans le navigateur par défaut de Windows. Nivra affiche le quota mensuel Vibe Code, son plafond et sa date de réinitialisation.

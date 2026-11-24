@@ -62,9 +62,9 @@ jobs:
           tagName: ${{ env.RELEASE_TAG }}
           releaseName: Nivra ${{ env.RELEASE_TAG }}
           releaseBody: |
-            Connecte Mistral dans ton navigateur habituel pour retrouver le quota mensuel Vibe Code, le montant utilisé et la date de réinitialisation.
+            Les cartes de compte et leurs jauges sont alignées. La carte Mistral affiche le montant utilisé et le plafond Vibe Code sur la même ligne.
 
-            Les boutons des cartes de compte sont regroupés, avec l’heure de dernière lecture en dessous.
+            Les boutons Ajouter un compte et Réinitialisations utilisent de nouvelles icônes vectorielles. Pour réorganiser les comptes, fais glisser directement une carte ou sélectionne-la et utilise les flèches haut et bas.
 
             Télécharge Nivra pour Windows avec le programme d’installation ci-dessous. Les installations existantes peuvent utiliser Réglages → Mises à jour.
           releaseDraft: true
